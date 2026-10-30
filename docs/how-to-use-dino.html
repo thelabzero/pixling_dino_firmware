@@ -37,6 +37,16 @@ kbd{font:600 .85em ui-monospace,Menlo,Consolas,monospace;background:var(--bg);bo
 .note{border-left:4px solid var(--accent);background:var(--card);padding:8px 14px;border-radius:0 8px 8px 0;margin:12px 0}
 .warn{border-left-color:#c9892b}
 .tag{display:inline-block;font-size:.75rem;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mute);vertical-align:middle}
+.anims{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin:14px 0}
+.anim{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px}
+.anim canvas{display:block;width:100%;aspect-ratio:2/1;background:var(--screen);border-radius:6px;image-rendering:pixelated;image-rendering:crisp-edges}
+.anim figcaption{display:flex;flex-direction:column;margin:0 0 8px;font-size:.9rem}
+.anim figcaption span{color:var(--mute);font-size:.85rem}
+.anim .bar{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.78rem;color:var(--mute)}
+.anim button{background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:3px 10px;font:inherit;font-weight:600;cursor:pointer}
+.anim .note-t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.anim input[type=range]{width:70px;accent-color:var(--accent)}
+.live{color:var(--mute);font-size:.85rem}
 footer{margin-top:48px;color:var(--mute);font-size:.9rem}
 @media (max-width:520px){h1{font-size:1.6rem}}
 </style>
@@ -83,6 +93,8 @@ footer{margin-top:48px;color:var(--mute);font-size:.9rem}
 
 <h2 id="life">3. Dino's day (home screen)</h2>
 <p>When no menu or timer is open, dino lives on its own. It never begs for attention or nags.</p>
+<p class="live">These are the real frames from the design sheet, played with the sheet's own timing.</p>
+<div class="anims"><figure class="anim" data-clip="idle"><figcaption><b>Idle</b><span>Default loop, blinks every few seconds</span></figcaption></figure><figure class="anim" data-clip="pet"><figcaption><b>Pet</b><span>Tap</span></figcaption></figure><figure class="anim" data-clip="overpet"><figcaption><b>Over-petted</b><span>4th tap within 8 s</span></figcaption></figure><figure class="anim" data-clip="rawr"><figcaption><b>RAWR</b><span>Idle quirk, every 2 to 4 minutes</span></figcaption></figure><figure class="anim" data-clip="shake"><figcaption><b>Shaken</b><span>Shake it</span></figcaption></figure><figure class="anim" data-clip="pickup"><figcaption><b>Picked up</b><span>Lift it</span></figcaption></figure><figure class="anim" data-clip="tilt"><figcaption><b>Tilted</b><span>Lean it over</span></figcaption></figure><figure class="anim" data-clip="sleep"><figcaption><b>Falling asleep</b><span>5 minutes with no input</span></figcaption></figure><figure class="anim" data-clip="wake"><figcaption><b>Waking up</b><span>Touch or move it while asleep</span></figcaption></figure></div>
 <div class="scroll"><table>
 <tr><th>What you do / what happens</th><th>What dino does</th></tr>
 <tr><td>Nothing for a while</td><td>Idles and blinks. Every 2 to 4 minutes it lets out a small <b>RAWR</b></td></tr>
@@ -97,6 +109,7 @@ footer{margin-top:48px;color:var(--mute);font-size:.9rem}
 <p>Dino also makes short piezo sounds for its voices, the menu and the alarm. Sound is silent only if the buzzer is disabled in the firmware.</p>
 
 <h2 id="menu">4. The menu</h2>
+<div class="anims"><figure class="anim" data-clip="menu"><figcaption><b>The menu</b><span>Long press, tilt to move, tap to choose</span></figcaption></figure><figure class="anim" data-clip="clock"><figcaption><b>Clock mode</b><span>Time stays on the home screen</span></figcaption></figure><figure class="anim" data-clip="time"><figcaption><b>Time board</b><span>Double tap on the home screen</span></figcaption></figure></div>
 <p>Long press from the home screen. The menu has five cards. It closes by itself after 10 s without input.</p>
 <ol class="steps">
   <li><b>Tilt</b> left or right to move to the next card.</li>
@@ -113,6 +126,7 @@ footer{margin-top:48px;color:var(--mute);font-size:.9rem}
 </table></div>
 
 <h2 id="alarm">5. Alarm</h2>
+<div class="anims"><figure class="anim" data-clip="setalarm"><figcaption><b>Set the alarm</b><span>Tilt changes a value, tap moves on</span></figcaption></figure><figure class="anim" data-clip="alarm"><figcaption><b>Ringing</b><span>Three stages, each louder</span></figcaption></figure><figure class="anim" data-clip="snooze"><figcaption><b>Snooze</b><span>Tap while ringing</span></figcaption></figure><figure class="anim" data-clip="dismiss"><figcaption><b>Dismiss</b><span>Hold or flip face-down</span></figcaption></figure></div>
 <h3>Set it</h3>
 <ol class="steps">
   <li>Long press, tilt to <b>Alarm</b>, tap. The time board opens at the <b>current time</b> with the hours blinking.</li>
@@ -136,6 +150,7 @@ footer{margin-top:48px;color:var(--mute);font-size:.9rem}
 <div class="note">Alarms follow the real clock. They never wait for an animation to finish.</div>
 
 <h2 id="focus">6. Focus session</h2>
+<div class="anims"><figure class="anim" data-clip="focuspick"><figcaption><b>Pick a length</b><span>Tilt to choose 25 / 45 / 60</span></figcaption></figure><figure class="anim" data-clip="focus"><figcaption><b>Working</b><span>Minutes count down</span></figcaption></figure><figure class="anim" data-clip="focusdone"><figcaption><b>Done</b><span>The countdown reaches zero</span></figcaption></figure><figure class="anim" data-clip="break"><figcaption><b>Breathing break</b><span>Breathe in time with dino</span></figcaption></figure></div>
 <ol class="steps">
   <li>Long press, tilt to <b>Focus</b>, tap.</li>
   <li><b>Tilt</b> to choose 25, 45 or 60 minutes.</li>
@@ -148,6 +163,7 @@ footer{margin-top:48px;color:var(--mute);font-size:.9rem}
 </ul>
 
 <h2 id="stopwatch">7. Stopwatch</h2>
+<div class="anims"><figure class="anim" data-clip="stopwatch"><figcaption><b>Stopwatch</b><span>Tap to pause or resume</span></figcaption></figure></div>
 <ul>
   <li>Menu, <b>Stopwatch</b>, tap. It shows <kbd>MM:SS</kbd>.</li>
   <li><b>Tap</b> pauses or resumes. Dino marks each full minute with a small animation and a sound.</li>
@@ -180,5 +196,46 @@ footer{margin-top:48px;color:var(--mute);font-size:.9rem}
   <p>Matches the firmware at checkpoint D4. Not yet in this version: games, friends, settings screen, a firm double tap for RAWR. Build and flash instructions are in the project README.</p>
 </footer>
 </div>
+<script src="guide-anims.js"></script>
+<script>
+(function(){
+  var A=window.DINO_ANIMS||{}, W=128, H=64;
+  var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function col(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+  function unpack(b64){var s=atob(b64),o=new Uint8Array(s.length);for(var i=0;i<s.length;i++)o[i]=s.charCodeAt(i);return o;}
+  document.querySelectorAll('.anim[data-clip]').forEach(function(el){
+    var clip=A[el.dataset.clip]; if(!clip) return;
+    var fr=clip.frames.map(function(f){return {ms:f.ms,note:f.note,bits:unpack(f.d)};});
+    var cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+    var ctx=cv.getContext('2d'), img=ctx.createImageData(W,H);
+    var bar=document.createElement('div'); bar.className='bar';
+    var btn=document.createElement('button');
+    var note=document.createElement('span'); note.className='note-t';
+    var rng=document.createElement('input'); rng.type='range'; rng.min=0; rng.max=fr.length-1; rng.value=0; rng.setAttribute('aria-label','Frame');
+    bar.appendChild(btn); bar.appendChild(rng); bar.appendChild(note);
+    el.appendChild(cv); el.appendChild(bar);
+    var i=0, timer=null, playing=false, visible=true;
+    function draw(){
+      var bg=[11,13,12], fg=[143,240,182], b=fr[i].bits, d=img.data;
+      var m=col('--screen'); if(/^#/.test(m)&&m.length==7){bg=[parseInt(m.substr(1,2),16),parseInt(m.substr(3,2),16),parseInt(m.substr(5,2),16)];}
+      var p=col('--pixon'); if(/^#/.test(p)&&p.length==7){fg=[parseInt(p.substr(1,2),16),parseInt(p.substr(3,2),16),parseInt(p.substr(5,2),16)];}
+      for(var k=0;k<W*H;k++){var on=b[k>>3]&(0x80>>(k&7)),c=on?fg:bg;d[k*4]=c[0];d[k*4+1]=c[1];d[k*4+2]=c[2];d[k*4+3]=255;}
+      ctx.putImageData(img,0,0); rng.value=i; note.textContent=(i+1)+'/'+fr.length+(fr[i].note?' · '+fr[i].note:'');
+    }
+    function tick(){ if(!playing) return; timer=setTimeout(function(){i=(i+1)%fr.length;draw();tick();},fr[i].ms); }
+    function play(){ if(playing) return; playing=true; btn.textContent='Pause'; tick(); }
+    function pause(){ playing=false; clearTimeout(timer); btn.textContent='Play'; }
+    btn.onclick=function(){playing?pause():play();};
+    rng.oninput=function(){pause(); i=+rng.value; draw();};
+    draw(); btn.textContent='Play';
+    if('IntersectionObserver' in window){
+      new IntersectionObserver(function(es){es.forEach(function(e){
+        visible=e.isIntersecting; if(visible&&!reduce&&!el.dataset.user) play(); else if(!visible) pause();
+      });},{threshold:.3}).observe(el);
+    } else if(!reduce){ play(); }
+    btn.addEventListener('click',function(){el.dataset.user=1;});
+  });
+})();
+</script>
 </body>
 </html>
