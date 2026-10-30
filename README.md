@@ -4,7 +4,7 @@ A small pixel dinosaur that lives on your desk, entirely in its face. It keeps y
 
 No camera, no microphone, no cloud. The only network use is a daily Wi-Fi time sync.
 
-- **How to use it (for owners):** open [`docs/how-to-use-dino.html`](docs/how-to-use-dino.html) in a browser.
+- **How to use it (for owners):** [**open the live guide**](https://thelabzero.github.io/pixling-dino-guide/) (animated, with the dino's real screens).
 - **How to build and flash it (this file).**
 - **Status and known gaps:** [`docs/checkpoints.md`](docs/checkpoints.md). Project rules for contributors: [`CLAUDE.md`](CLAUDE.md).
 
