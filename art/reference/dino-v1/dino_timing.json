@@ -1,0 +1,2539 @@
+{
+ "width": 128,
+ "height": 64,
+ "time": "10:24",
+ "friend": "SAM",
+ "frames": 416,
+ "clips": [
+  {
+   "id": "R1",
+   "key": "rig_eyes",
+   "group": "R",
+   "name": "Eye parts",
+   "trigger": "Pupils (top) · shapes (bottom), shown at 0.5",
+   "frames": [
+    {
+     "index": 0,
+     "ms": 1000,
+     "note": "pupils · shapes"
+    }
+   ]
+  },
+  {
+   "id": "R2",
+   "key": "rig_brows",
+   "group": "R",
+   "name": "Brows and lids",
+   "trigger": "Brow angle a · lift · lid slant sl",
+   "frames": [
+    {
+     "index": 1,
+     "ms": 1000,
+     "note": "brows · lids"
+    }
+   ]
+  },
+  {
+   "id": "R3",
+   "key": "rig_mouths",
+   "group": "R",
+   "name": "Mouths",
+   "trigger": "16 shapes · 2 px stroke at full size, 1 px below 0.9",
+   "frames": [
+    {
+     "index": 2,
+     "ms": 1000,
+     "note": "line · smile · flat · frown · grin · rawr · o · oSmall · yawn · grr · wobble · smirk · tongue · chomp · chompOpen · drool"
+    }
+   ]
+  },
+  {
+   "id": "R4",
+   "key": "rig_type",
+   "group": "R",
+   "name": "Type and digits",
+   "trigger": "Large 9 × 13 · small 4 × 7 · text 5 × 7",
+   "frames": [
+    {
+     "index": 3,
+     "ms": 1000,
+     "note": "full set"
+    }
+   ]
+  },
+  {
+   "id": "R5",
+   "key": "rig_icons",
+   "group": "R",
+   "name": "Icons 16 × 16",
+   "trigger": "clock · alarm · focus · games · friends · chat · settings · back · meteor · bug · duel · pong · egg · mail · leaf · coffee",
+   "frames": [
+    {
+     "index": 4,
+     "ms": 1000,
+     "note": "menu row · props row"
+    }
+   ]
+  },
+  {
+   "id": "R6",
+   "key": "expressions",
+   "group": "R",
+   "name": "Expression sheet",
+   "trigger": "24 presets · each is one parameter row",
+   "frames": [
+    {
+     "index": 5,
+     "ms": 900,
+     "note": "idle"
+    },
+    {
+     "index": 6,
+     "ms": 900,
+     "note": "happy"
+    },
+    {
+     "index": 7,
+     "ms": 900,
+     "note": "love"
+    },
+    {
+     "index": 8,
+     "ms": 900,
+     "note": "curious"
+    },
+    {
+     "index": 9,
+     "ms": 900,
+     "note": "sleepy"
+    },
+    {
+     "index": 10,
+     "ms": 900,
+     "note": "asleep"
+    },
+    {
+     "index": 11,
+     "ms": 900,
+     "note": "surprised"
+    },
+    {
+     "index": 12,
+     "ms": 900,
+     "note": "grumpy"
+    },
+    {
+     "index": 13,
+     "ms": 900,
+     "note": "rawr"
+    },
+    {
+     "index": 14,
+     "ms": 900,
+     "note": "dizzy"
+    },
+    {
+     "index": 15,
+     "ms": 900,
+     "note": "shy"
+    },
+    {
+     "index": 16,
+     "ms": 900,
+     "note": "unimpressed"
+    },
+    {
+     "index": 17,
+     "ms": 900,
+     "note": "mischief"
+    },
+    {
+     "index": 18,
+     "ms": 900,
+     "note": "sad"
+    },
+    {
+     "index": 19,
+     "ms": 900,
+     "note": "focus"
+    },
+    {
+     "index": 20,
+     "ms": 900,
+     "note": "excited"
+    },
+    {
+     "index": 21,
+     "ms": 900,
+     "note": "hungry"
+    },
+    {
+     "index": 22,
+     "ms": 900,
+     "note": "chew"
+    },
+    {
+     "index": 23,
+     "ms": 900,
+     "note": "smug"
+    },
+    {
+     "index": 24,
+     "ms": 900,
+     "note": "scared"
+    },
+    {
+     "index": 25,
+     "ms": 900,
+     "note": "determined"
+    },
+    {
+     "index": 26,
+     "ms": 900,
+     "note": "squeeze"
+    },
+    {
+     "index": 27,
+     "ms": 900,
+     "note": "wink"
+    },
+    {
+     "index": 28,
+     "ms": 900,
+     "note": "yawn"
+    }
+   ]
+  },
+  {
+   "id": "R7",
+   "key": "scale",
+   "group": "R",
+   "name": "Scale ladder",
+   "trigger": "1.0 · 0.7 · 0.55 · 0.4",
+   "frames": [
+    {
+     "index": 29,
+     "ms": 1000,
+     "note": "0.7 · 0.55 · 0.4 (not used)"
+    }
+   ]
+  },
+  {
+   "id": "L1",
+   "key": "idle",
+   "group": "L",
+   "name": "Idle",
+   "trigger": "Default loop · blink every 2.2–6.4 s",
+   "frames": [
+    {
+     "index": 30,
+     "ms": 2400,
+     "note": "idle"
+    },
+    {
+     "index": 31,
+     "ms": 60,
+     "note": "blink"
+    },
+    {
+     "index": 32,
+     "ms": 80,
+     "note": ""
+    },
+    {
+     "index": 33,
+     "ms": 60,
+     "note": ""
+    },
+    {
+     "index": 34,
+     "ms": 1600,
+     "note": ""
+    },
+    {
+     "index": 35,
+     "ms": 900,
+     "note": "glance right"
+    },
+    {
+     "index": 36,
+     "ms": 700,
+     "note": ""
+    },
+    {
+     "index": 37,
+     "ms": 1100,
+     "note": "glance left"
+    },
+    {
+     "index": 38,
+     "ms": 1200,
+     "note": "breathe in"
+    },
+    {
+     "index": 39,
+     "ms": 1200,
+     "note": "breathe out"
+    },
+    {
+     "index": 40,
+     "ms": 60,
+     "note": "double blink"
+    },
+    {
+     "index": 41,
+     "ms": 120,
+     "note": ""
+    },
+    {
+     "index": 42,
+     "ms": 60,
+     "note": ""
+    },
+    {
+     "index": 43,
+     "ms": 1400,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "L2",
+   "key": "pet",
+   "group": "L",
+   "name": "Pet",
+   "trigger": "Hold touch 0.6 s",
+   "frames": [
+    {
+     "index": 44,
+     "ms": 300,
+     "note": "touch"
+    },
+    {
+     "index": 45,
+     "ms": 700,
+     "note": "shy"
+    },
+    {
+     "index": 46,
+     "ms": 1200,
+     "note": "heart eyes"
+    },
+    {
+     "index": 47,
+     "ms": 900,
+     "note": "grin"
+    },
+    {
+     "index": 48,
+     "ms": 600,
+     "note": "happy"
+    },
+    {
+     "index": 49,
+     "ms": 400,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "L3",
+   "key": "overpet",
+   "group": "L",
+   "name": "Over-petted",
+   "trigger": "4th touch within 8 s · then ignores touch for 10 s",
+   "frames": [
+    {
+     "index": 50,
+     "ms": 600,
+     "note": "side-eye"
+    },
+    {
+     "index": 51,
+     "ms": 500,
+     "note": "grumble"
+    },
+    {
+     "index": 52,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 53,
+     "ms": 500,
+     "note": ""
+    },
+    {
+     "index": 54,
+     "ms": 800,
+     "note": "looks away"
+    },
+    {
+     "index": 55,
+     "ms": 400,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "L4",
+   "key": "rawr",
+   "group": "L",
+   "name": "RAWR",
+   "trigger": "Idle quirk · every 2–4 min · or a firm double tap",
+   "frames": [
+    {
+     "index": 56,
+     "ms": 500,
+     "note": "idle"
+    },
+    {
+     "index": 57,
+     "ms": 400,
+     "note": "anticipation"
+    },
+    {
+     "index": 58,
+     "ms": 140,
+     "note": "RAWR"
+    },
+    {
+     "index": 59,
+     "ms": 140,
+     "note": ""
+    },
+    {
+     "index": 60,
+     "ms": 500,
+     "note": ""
+    },
+    {
+     "index": 61,
+     "ms": 300,
+     "note": "giggle"
+    },
+    {
+     "index": 62,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 63,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 64,
+     "ms": 400,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "L5",
+   "key": "shake",
+   "group": "L",
+   "name": "Shaken",
+   "trigger": "IMU: 3 jerks over 1.2 g within 600 ms",
+   "frames": [
+    {
+     "index": 65,
+     "ms": 120,
+     "note": "jolt"
+    },
+    {
+     "index": 66,
+     "ms": 120,
+     "note": ""
+    },
+    {
+     "index": 67,
+     "ms": 150,
+     "note": "dizzy"
+    },
+    {
+     "index": 68,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 69,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 70,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 71,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 72,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 73,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 74,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 75,
+     "ms": 500,
+     "note": "recovering"
+    },
+    {
+     "index": 76,
+     "ms": 80,
+     "note": ""
+    },
+    {
+     "index": 77,
+     "ms": 400,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "L6",
+   "key": "pickup",
+   "group": "L",
+   "name": "Picked up",
+   "trigger": "|a| off 1 g by 0.15 g for 150 ms, tilt over 25°",
+   "frames": [
+    {
+     "index": 78,
+     "ms": 300,
+     "note": "lifted"
+    },
+    {
+     "index": 79,
+     "ms": 900,
+     "note": "looks down"
+    },
+    {
+     "index": 80,
+     "ms": 700,
+     "note": ""
+    },
+    {
+     "index": 81,
+     "ms": 700,
+     "note": ""
+    },
+    {
+     "index": 82,
+     "ms": 600,
+     "note": ""
+    },
+    {
+     "index": 83,
+     "ms": 400,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "L7",
+   "key": "tilt",
+   "group": "L",
+   "name": "Tilted",
+   "trigger": "Roll over 20° · eyes slide downhill",
+   "frames": [
+    {
+     "index": 84,
+     "ms": 700,
+     "note": "tilt left"
+    },
+    {
+     "index": 85,
+     "ms": 300,
+     "note": ""
+    },
+    {
+     "index": 86,
+     "ms": 700,
+     "note": "tilt right"
+    },
+    {
+     "index": 87,
+     "ms": 300,
+     "note": "level"
+    },
+    {
+     "index": 88,
+     "ms": 700,
+     "note": "relief"
+    }
+   ]
+  },
+  {
+   "id": "L8",
+   "key": "sleep",
+   "group": "L",
+   "name": "Fall asleep",
+   "trigger": "No input for 5 min · display dims once asleep",
+   "frames": [
+    {
+     "index": 89,
+     "ms": 1500,
+     "note": "drowsy"
+    },
+    {
+     "index": 90,
+     "ms": 1500,
+     "note": ""
+    },
+    {
+     "index": 91,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 92,
+     "ms": 1600,
+     "note": "asleep"
+    },
+    {
+     "index": 93,
+     "ms": 1600,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "L9",
+   "key": "wake",
+   "group": "L",
+   "name": "Wake up",
+   "trigger": "Any touch or motion while asleep",
+   "frames": [
+    {
+     "index": 94,
+     "ms": 800,
+     "note": "asleep"
+    },
+    {
+     "index": 95,
+     "ms": 700,
+     "note": "one eye"
+    },
+    {
+     "index": 96,
+     "ms": 900,
+     "note": "yawn"
+    },
+    {
+     "index": 97,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 98,
+     "ms": 80,
+     "note": ""
+    },
+    {
+     "index": 99,
+     "ms": 120,
+     "note": ""
+    },
+    {
+     "index": 100,
+     "ms": 80,
+     "note": ""
+    },
+    {
+     "index": 101,
+     "ms": 500,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "U1",
+   "key": "time",
+   "group": "U",
+   "name": "Time on request",
+   "trigger": "Double tap",
+   "frames": [
+    {
+     "index": 102,
+     "ms": 500,
+     "note": "idle"
+    },
+    {
+     "index": 103,
+     "ms": 200,
+     "note": "double tap: brows pop"
+    },
+    {
+     "index": 104,
+     "ms": 120,
+     "note": "face slides aside"
+    },
+    {
+     "index": 105,
+     "ms": 140,
+     "note": ""
+    },
+    {
+     "index": 106,
+     "ms": 120,
+     "note": "digits drop in"
+    },
+    {
+     "index": 107,
+     "ms": 100,
+     "note": "overshoot"
+    },
+    {
+     "index": 108,
+     "ms": 1400,
+     "note": "hold"
+    },
+    {
+     "index": 109,
+     "ms": 1000,
+     "note": "smug at you"
+    },
+    {
+     "index": 110,
+     "ms": 120,
+     "note": "digits fall"
+    },
+    {
+     "index": 111,
+     "ms": 140,
+     "note": "face grows back"
+    },
+    {
+     "index": 112,
+     "ms": 400,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "U2",
+   "key": "clock",
+   "group": "U",
+   "name": "Clock mode",
+   "trigger": "Always-on",
+   "frames": [
+    {
+     "index": 113,
+     "ms": 2500,
+     "note": "idle"
+    },
+    {
+     "index": 114,
+     "ms": 150,
+     "note": "blink"
+    },
+    {
+     "index": 115,
+     "ms": 1500,
+     "note": ""
+    },
+    {
+     "index": 116,
+     "ms": 300,
+     "note": "minute flips: glance"
+    },
+    {
+     "index": 117,
+     "ms": 1200,
+     "note": ""
+    },
+    {
+     "index": 118,
+     "ms": 1500,
+     "note": "content"
+    }
+   ]
+  },
+  {
+   "id": "U3",
+   "key": "clockshift",
+   "group": "U",
+   "name": "Burn-in shift grid",
+   "trigger": "Every 3 min · 9 positions · 27 min cycle",
+   "frames": [
+    {
+     "index": 119,
+     "ms": 700,
+     "note": "dx 0 · dy 0"
+    },
+    {
+     "index": 120,
+     "ms": 700,
+     "note": "dx +1 · dy 0"
+    },
+    {
+     "index": 121,
+     "ms": 700,
+     "note": "dx +1 · dy +1"
+    },
+    {
+     "index": 122,
+     "ms": 700,
+     "note": "dx 0 · dy +1"
+    },
+    {
+     "index": 123,
+     "ms": 700,
+     "note": "dx -1 · dy +1"
+    },
+    {
+     "index": 124,
+     "ms": 700,
+     "note": "dx -1 · dy 0"
+    },
+    {
+     "index": 125,
+     "ms": 700,
+     "note": "dx -1 · dy -1"
+    },
+    {
+     "index": 126,
+     "ms": 700,
+     "note": "dx 0 · dy -1"
+    },
+    {
+     "index": 127,
+     "ms": 700,
+     "note": "dx +1 · dy -1"
+    },
+    {
+     "index": 128,
+     "ms": 1600,
+     "note": "all 9 overlaid (reference)"
+    }
+   ]
+  },
+  {
+   "id": "U4",
+   "key": "menu",
+   "group": "U",
+   "name": "Menu",
+   "trigger": "Long press 1.5 s · tilt to move · tap to choose",
+   "frames": [
+    {
+     "index": 129,
+     "ms": 1100,
+     "note": "clock (opens here)"
+    },
+    {
+     "index": 130,
+     "ms": 120,
+     "note": "tilt right: slide"
+    },
+    {
+     "index": 131,
+     "ms": 120,
+     "note": "swap"
+    },
+    {
+     "index": 132,
+     "ms": 120,
+     "note": "next pops up"
+    },
+    {
+     "index": 133,
+     "ms": 1100,
+     "note": "alarm"
+    },
+    {
+     "index": 134,
+     "ms": 120,
+     "note": "tilt right: slide"
+    },
+    {
+     "index": 135,
+     "ms": 120,
+     "note": "swap"
+    },
+    {
+     "index": 136,
+     "ms": 120,
+     "note": "next pops up"
+    },
+    {
+     "index": 137,
+     "ms": 1100,
+     "note": "focus"
+    },
+    {
+     "index": 138,
+     "ms": 120,
+     "note": "tilt right: slide"
+    },
+    {
+     "index": 139,
+     "ms": 120,
+     "note": "swap"
+    },
+    {
+     "index": 140,
+     "ms": 120,
+     "note": "next pops up"
+    },
+    {
+     "index": 141,
+     "ms": 1100,
+     "note": "games"
+    },
+    {
+     "index": 142,
+     "ms": 120,
+     "note": "tilt right: slide"
+    },
+    {
+     "index": 143,
+     "ms": 120,
+     "note": "swap"
+    },
+    {
+     "index": 144,
+     "ms": 120,
+     "note": "next pops up"
+    },
+    {
+     "index": 145,
+     "ms": 1100,
+     "note": "friends"
+    },
+    {
+     "index": 146,
+     "ms": 120,
+     "note": "tilt right: slide"
+    },
+    {
+     "index": 147,
+     "ms": 120,
+     "note": "swap"
+    },
+    {
+     "index": 148,
+     "ms": 120,
+     "note": "next pops up"
+    },
+    {
+     "index": 149,
+     "ms": 1100,
+     "note": "messages"
+    },
+    {
+     "index": 150,
+     "ms": 120,
+     "note": "tilt right: slide"
+    },
+    {
+     "index": 151,
+     "ms": 120,
+     "note": "swap"
+    },
+    {
+     "index": 152,
+     "ms": 120,
+     "note": "next pops up"
+    },
+    {
+     "index": 153,
+     "ms": 1100,
+     "note": "settings"
+    },
+    {
+     "index": 154,
+     "ms": 120,
+     "note": "tilt right: slide"
+    },
+    {
+     "index": 155,
+     "ms": 120,
+     "note": "swap"
+    },
+    {
+     "index": 156,
+     "ms": 120,
+     "note": "next pops up"
+    },
+    {
+     "index": 157,
+     "ms": 1100,
+     "note": "back"
+    }
+   ]
+  },
+  {
+   "id": "U5",
+   "key": "setalarm",
+   "group": "U",
+   "name": "Set alarm",
+   "trigger": "Tilt = change value · tap = next field, then confirm",
+   "frames": [
+    {
+     "index": 158,
+     "ms": 400,
+     "note": "hours selected"
+    },
+    {
+     "index": 159,
+     "ms": 400,
+     "note": "underline blinks"
+    },
+    {
+     "index": 160,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 161,
+     "ms": 250,
+     "note": "tilt right: +1 h"
+    },
+    {
+     "index": 162,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 163,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 164,
+     "ms": 400,
+     "note": "tap: minutes"
+    },
+    {
+     "index": 165,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 166,
+     "ms": 250,
+     "note": "tilt right: +5 min"
+    },
+    {
+     "index": 167,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 168,
+     "ms": 900,
+     "note": "tap: confirmed"
+    },
+    {
+     "index": 169,
+     "ms": 500,
+     "note": ""
+    },
+    {
+     "index": 170,
+     "ms": 140,
+     "note": "board away"
+    },
+    {
+     "index": 171,
+     "ms": 400,
+     "note": "idle"
+    }
+   ]
+  },
+  {
+   "id": "U6",
+   "key": "alarm",
+   "group": "U",
+   "name": "Alarm ringing",
+   "trigger": "At alarm time · 3 stages, each loops about 20 s before escalating",
+   "frames": [
+    {
+     "index": 172,
+     "ms": 300,
+     "note": "stage 1: asleep"
+    },
+    {
+     "index": 173,
+     "ms": 300,
+     "note": "brow twitch"
+    },
+    {
+     "index": 174,
+     "ms": 400,
+     "note": "one eye opens"
+    },
+    {
+     "index": 175,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 176,
+     "ms": 250,
+     "note": "stage 2: awake"
+    },
+    {
+     "index": 177,
+     "ms": 250,
+     "note": ""
+    },
+    {
+     "index": 178,
+     "ms": 250,
+     "note": ""
+    },
+    {
+     "index": 179,
+     "ms": 250,
+     "note": "louder"
+    },
+    {
+     "index": 180,
+     "ms": 200,
+     "note": "stage 3: RAWR"
+    },
+    {
+     "index": 181,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 182,
+     "ms": 220,
+     "note": "peak drama"
+    },
+    {
+     "index": 183,
+     "ms": 200,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "U7",
+   "key": "snooze",
+   "group": "U",
+   "name": "Snooze",
+   "trigger": "Tap while ringing",
+   "frames": [
+    {
+     "index": 184,
+     "ms": 600,
+     "note": "grumble"
+    },
+    {
+     "index": 185,
+     "ms": 800,
+     "note": "+5 min"
+    },
+    {
+     "index": 186,
+     "ms": 500,
+     "note": "eyes droop"
+    },
+    {
+     "index": 187,
+     "ms": 1400,
+     "note": "asleep"
+    },
+    {
+     "index": 188,
+     "ms": 1400,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "U8",
+   "key": "dismiss",
+   "group": "U",
+   "name": "Dismiss",
+   "trigger": "Flip face-down or hold 2 s",
+   "frames": [
+    {
+     "index": 189,
+     "ms": 1000,
+     "note": "big yawn"
+    },
+    {
+     "index": 190,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 191,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 192,
+     "ms": 300,
+     "note": ""
+    },
+    {
+     "index": 193,
+     "ms": 900,
+     "note": "good morning"
+    },
+    {
+     "index": 194,
+     "ms": 1400,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "U9",
+   "key": "focuspick",
+   "group": "U",
+   "name": "Focus: pick length",
+   "trigger": "Tilt = 25 / 45 / 60 · flip face-down = start",
+   "frames": [
+    {
+     "index": 195,
+     "ms": 1200,
+     "note": "25 min"
+    },
+    {
+     "index": 196,
+     "ms": 150,
+     "note": "tilt right"
+    },
+    {
+     "index": 197,
+     "ms": 1000,
+     "note": "45 min"
+    },
+    {
+     "index": 198,
+     "ms": 150,
+     "note": "tilt right"
+    },
+    {
+     "index": 199,
+     "ms": 1000,
+     "note": "60 min"
+    },
+    {
+     "index": 200,
+     "ms": 150,
+     "note": "wraps to 25"
+    },
+    {
+     "index": 201,
+     "ms": 900,
+     "note": ""
+    },
+    {
+     "index": 202,
+     "ms": 400,
+     "note": "flip: serious nod"
+    },
+    {
+     "index": 203,
+     "ms": 150,
+     "note": "board away"
+    }
+   ]
+  },
+  {
+   "id": "U10",
+   "key": "focus",
+   "group": "U",
+   "name": "Focus: working",
+   "trigger": "During the session · countdown updates once a minute",
+   "frames": [
+    {
+     "index": 204,
+     "ms": 1400,
+     "note": "working"
+    },
+    {
+     "index": 205,
+     "ms": 160,
+     "note": "blink"
+    },
+    {
+     "index": 206,
+     "ms": 1400,
+     "note": ""
+    },
+    {
+     "index": 207,
+     "ms": 500,
+     "note": "glance at you"
+    },
+    {
+     "index": 208,
+     "ms": 1400,
+     "note": "minute passes"
+    }
+   ]
+  },
+  {
+   "id": "U11",
+   "key": "focusdone",
+   "group": "U",
+   "name": "Focus: done",
+   "trigger": "Countdown reaches 00",
+   "frames": [
+    {
+     "index": 209,
+     "ms": 500,
+     "note": "time up"
+    },
+    {
+     "index": 210,
+     "ms": 900,
+     "note": "stars"
+    },
+    {
+     "index": 211,
+     "ms": 900,
+     "note": ""
+    },
+    {
+     "index": 212,
+     "ms": 1200,
+     "note": "proud"
+    }
+   ]
+  },
+  {
+   "id": "U12",
+   "key": "break",
+   "group": "U",
+   "name": "Breathing break",
+   "trigger": "After a focus session · 5 min · 4-4-4 breathing",
+   "frames": [
+    {
+     "index": 213,
+     "ms": 800,
+     "note": "looks at you"
+    },
+    {
+     "index": 214,
+     "ms": 1300,
+     "note": "in"
+    },
+    {
+     "index": 215,
+     "ms": 1300,
+     "note": ""
+    },
+    {
+     "index": 216,
+     "ms": 1400,
+     "note": ""
+    },
+    {
+     "index": 217,
+     "ms": 4000,
+     "note": "hold"
+    },
+    {
+     "index": 218,
+     "ms": 1300,
+     "note": "out"
+    },
+    {
+     "index": 219,
+     "ms": 1300,
+     "note": ""
+    },
+    {
+     "index": 220,
+     "ms": 1400,
+     "note": ""
+    },
+    {
+     "index": 221,
+     "ms": 1000,
+     "note": "again"
+    }
+   ]
+  },
+  {
+   "id": "U13",
+   "key": "stopwatch",
+   "group": "U",
+   "name": "Stopwatch",
+   "trigger": "Counting up · Deskimon nods once per minute",
+   "frames": [
+    {
+     "index": 222,
+     "ms": 1000,
+     "note": ""
+    },
+    {
+     "index": 223,
+     "ms": 1000,
+     "note": "watching"
+    },
+    {
+     "index": 224,
+     "ms": 200,
+     "note": "nod"
+    },
+    {
+     "index": 225,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 226,
+     "ms": 200,
+     "note": "nod"
+    },
+    {
+     "index": 227,
+     "ms": 800,
+     "note": "pleased"
+    },
+    {
+     "index": 228,
+     "ms": 1000,
+     "note": ""
+    },
+    {
+     "index": 229,
+     "ms": 1000,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "U14",
+   "key": "lowbatt",
+   "group": "U",
+   "name": "Low battery",
+   "trigger": "Battery under 3.5 V · checks every 30 s",
+   "frames": [
+    {
+     "index": 230,
+     "ms": 800,
+     "note": ""
+    },
+    {
+     "index": 231,
+     "ms": 600,
+     "note": "notices"
+    },
+    {
+     "index": 232,
+     "ms": 1000,
+     "note": "hungry"
+    },
+    {
+     "index": 233,
+     "ms": 900,
+     "note": ""
+    },
+    {
+     "index": 234,
+     "ms": 900,
+     "note": "drowsy"
+    }
+   ]
+  },
+  {
+   "id": "U15",
+   "key": "charging",
+   "group": "U",
+   "name": "Charging",
+   "trigger": "USB power detected",
+   "frames": [
+    {
+     "index": 235,
+     "ms": 300,
+     "note": "plugged in"
+    },
+    {
+     "index": 236,
+     "ms": 500,
+     "note": ""
+    },
+    {
+     "index": 237,
+     "ms": 200,
+     "note": "chomp"
+    },
+    {
+     "index": 238,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 239,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 240,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 241,
+     "ms": 600,
+     "note": "munching"
+    },
+    {
+     "index": 242,
+     "ms": 1400,
+     "note": "full"
+    }
+   ]
+  },
+  {
+   "id": "U16",
+   "key": "settings",
+   "group": "U",
+   "name": "Settings",
+   "trigger": "Tilt = item · tap = change",
+   "frames": [
+    {
+     "index": 243,
+     "ms": 900,
+     "note": "sound on"
+    },
+    {
+     "index": 244,
+     "ms": 900,
+     "note": "tap: off"
+    },
+    {
+     "index": 245,
+     "ms": 120,
+     "note": "tilt"
+    },
+    {
+     "index": 246,
+     "ms": 900,
+     "note": "light 1"
+    },
+    {
+     "index": 247,
+     "ms": 700,
+     "note": "light 2"
+    },
+    {
+     "index": 248,
+     "ms": 900,
+     "note": "light 3"
+    },
+    {
+     "index": 249,
+     "ms": 120,
+     "note": "tilt"
+    },
+    {
+     "index": 250,
+     "ms": 1200,
+     "note": "name"
+    }
+   ]
+  },
+  {
+   "id": "G1",
+   "key": "gamepick",
+   "group": "G",
+   "name": "Game picker",
+   "trigger": "Menu > Games · tilt · tap to start",
+   "frames": [
+    {
+     "index": 251,
+     "ms": 1000,
+     "note": "meteor · 1P"
+    },
+    {
+     "index": 252,
+     "ms": 120,
+     "note": "tilt"
+    },
+    {
+     "index": 253,
+     "ms": 1000,
+     "note": "snack · 1P"
+    },
+    {
+     "index": 254,
+     "ms": 120,
+     "note": "tilt"
+    },
+    {
+     "index": 255,
+     "ms": 1000,
+     "note": "draw · 2P"
+    },
+    {
+     "index": 256,
+     "ms": 120,
+     "note": "tilt"
+    },
+    {
+     "index": 257,
+     "ms": 1000,
+     "note": "pong · 2P"
+    },
+    {
+     "index": 258,
+     "ms": 120,
+     "note": "tilt"
+    },
+    {
+     "index": 259,
+     "ms": 1000,
+     "note": "hot egg · 2-4P"
+    }
+   ]
+  },
+  {
+   "id": "G2",
+   "key": "meteor",
+   "group": "G",
+   "name": "Meteor dodge",
+   "trigger": "Solo · tilt to run · score = meteors survived",
+   "frames": [
+    {
+     "index": 260,
+     "ms": 500,
+     "note": "3"
+    },
+    {
+     "index": 261,
+     "ms": 500,
+     "note": "2"
+    },
+    {
+     "index": 262,
+     "ms": 500,
+     "note": "1"
+    },
+    {
+     "index": 263,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 264,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 265,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 266,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 267,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 268,
+     "ms": 110,
+     "note": "near miss"
+    },
+    {
+     "index": 269,
+     "ms": 110,
+     "note": "near miss"
+    },
+    {
+     "index": 270,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 271,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 272,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 273,
+     "ms": 500,
+     "note": "hit"
+    }
+   ]
+  },
+  {
+   "id": "G3",
+   "key": "meteorend",
+   "group": "G",
+   "name": "Meteor: game over",
+   "trigger": "After a hit",
+   "frames": [
+    {
+     "index": 274,
+     "ms": 300,
+     "note": ""
+    },
+    {
+     "index": 275,
+     "ms": 300,
+     "note": ""
+    },
+    {
+     "index": 276,
+     "ms": 300,
+     "note": ""
+    },
+    {
+     "index": 277,
+     "ms": 1400,
+     "note": "new best variant"
+    }
+   ]
+  },
+  {
+   "id": "G4",
+   "key": "snack",
+   "group": "G",
+   "name": "Snack snap",
+   "trigger": "Solo · tap the moment the bug appears",
+   "frames": [
+    {
+     "index": 278,
+     "ms": 800,
+     "note": "ready"
+    },
+    {
+     "index": 279,
+     "ms": 700,
+     "note": "waiting"
+    },
+    {
+     "index": 280,
+     "ms": 700,
+     "note": ""
+    },
+    {
+     "index": 281,
+     "ms": 200,
+     "note": "bug lands"
+    },
+    {
+     "index": 282,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 283,
+     "ms": 120,
+     "note": "tap: lunge"
+    },
+    {
+     "index": 284,
+     "ms": 150,
+     "note": "chomp"
+    },
+    {
+     "index": 285,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 286,
+     "ms": 1300,
+     "note": "result"
+    },
+    {
+     "index": 287,
+     "ms": 1300,
+     "note": "too-early variant"
+    }
+   ]
+  },
+  {
+   "id": "G5",
+   "key": "draw",
+   "group": "G",
+   "name": "Quick draw",
+   "trigger": "2P · random GO · first tap wins",
+   "frames": [
+    {
+     "index": 288,
+     "ms": 500,
+     "note": "lobby"
+    },
+    {
+     "index": 289,
+     "ms": 500,
+     "note": ""
+    },
+    {
+     "index": 290,
+     "ms": 900,
+     "note": "found"
+    },
+    {
+     "index": 291,
+     "ms": 600,
+     "note": "3"
+    },
+    {
+     "index": 292,
+     "ms": 600,
+     "note": "2"
+    },
+    {
+     "index": 293,
+     "ms": 600,
+     "note": "1"
+    },
+    {
+     "index": 294,
+     "ms": 200,
+     "note": "stare"
+    },
+    {
+     "index": 295,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 296,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 297,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 298,
+     "ms": 500,
+     "note": "GO"
+    },
+    {
+     "index": 299,
+     "ms": 1400,
+     "note": "win"
+    },
+    {
+     "index": 300,
+     "ms": 1400,
+     "note": "lose (other unit)"
+    }
+   ]
+  },
+  {
+   "id": "G6",
+   "key": "pong",
+   "group": "G",
+   "name": "Desk pong",
+   "trigger": "2P · tilt moves paddle · ball travels between units",
+   "frames": [
+    {
+     "index": 301,
+     "ms": 500,
+     "note": "serve"
+    },
+    {
+     "index": 302,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 303,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 304,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 305,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 306,
+     "ms": 900,
+     "note": "on SAM’s side"
+    },
+    {
+     "index": 307,
+     "ms": 110,
+     "note": "coming back"
+    },
+    {
+     "index": 308,
+     "ms": 110,
+     "note": "tilt to meet it"
+    },
+    {
+     "index": 309,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 310,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 311,
+     "ms": 150,
+     "note": "return"
+    },
+    {
+     "index": 312,
+     "ms": 1300,
+     "note": "missed one (other round)"
+    }
+   ]
+  },
+  {
+   "id": "G7",
+   "key": "hotegg",
+   "group": "G",
+   "name": "Hot egg",
+   "trigger": "2–4P · tap to pass · whoever holds it when it hatches babysits",
+   "frames": [
+    {
+     "index": 313,
+     "ms": 200,
+     "note": "egg arrives"
+    },
+    {
+     "index": 314,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 315,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 316,
+     "ms": 150,
+     "note": "wobble"
+    },
+    {
+     "index": 317,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 318,
+     "ms": 150,
+     "note": "tap: pass"
+    },
+    {
+     "index": 319,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 320,
+     "ms": 800,
+     "note": "relief"
+    },
+    {
+     "index": 321,
+     "ms": 200,
+     "note": "back again, cracking"
+    },
+    {
+     "index": 322,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 323,
+     "ms": 150,
+     "note": ""
+    },
+    {
+     "index": 324,
+     "ms": 300,
+     "note": "hatch"
+    },
+    {
+     "index": 325,
+     "ms": 1500,
+     "note": "baby!"
+    }
+   ]
+  },
+  {
+   "id": "F1",
+   "key": "pair",
+   "group": "F",
+   "name": "Pair by bump",
+   "trigger": "Menu > Friends > Pair · knock two units together",
+   "frames": [
+    {
+     "index": 326,
+     "ms": 600,
+     "note": "waiting"
+    },
+    {
+     "index": 327,
+     "ms": 600,
+     "note": ""
+    },
+    {
+     "index": 328,
+     "ms": 160,
+     "note": "bump"
+    },
+    {
+     "index": 329,
+     "ms": 400,
+     "note": "finding"
+    },
+    {
+     "index": 330,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 331,
+     "ms": 1300,
+     "note": "paired"
+    },
+    {
+     "index": 332,
+     "ms": 700,
+     "note": "saved"
+    }
+   ]
+  },
+  {
+   "id": "F2",
+   "key": "nearby",
+   "group": "F",
+   "name": "Friend nearby",
+   "trigger": "A paired friend comes into range",
+   "frames": [
+    {
+     "index": 333,
+     "ms": 900,
+     "note": "idle"
+    },
+    {
+     "index": 334,
+     "ms": 300,
+     "note": "perks up"
+    },
+    {
+     "index": 335,
+     "ms": 500,
+     "note": ""
+    },
+    {
+     "index": 336,
+     "ms": 1300,
+     "note": ""
+    },
+    {
+     "index": 337,
+     "ms": 700,
+     "note": "wink"
+    }
+   ]
+  },
+  {
+   "id": "F3",
+   "key": "friends",
+   "group": "F",
+   "name": "Friend list",
+   "trigger": "Menu > Friends · tilt to move · tap to open",
+   "frames": [
+    {
+     "index": 338,
+     "ms": 1000,
+     "note": "sam"
+    },
+    {
+     "index": 339,
+     "ms": 700,
+     "note": "tilt"
+    },
+    {
+     "index": 340,
+     "ms": 700,
+     "note": ""
+    },
+    {
+     "index": 341,
+     "ms": 700,
+     "note": "send to all"
+    }
+   ]
+  },
+  {
+   "id": "F4",
+   "key": "compose",
+   "group": "F",
+   "name": "Compose",
+   "trigger": "Friend > Message · tilt through 8 phrases · tap to send",
+   "frames": [
+    {
+     "index": 342,
+     "ms": 900,
+     "note": "hi!"
+    },
+    {
+     "index": 343,
+     "ms": 120,
+     "note": "tilt"
+    },
+    {
+     "index": 344,
+     "ms": 900,
+     "note": "boop"
+    },
+    {
+     "index": 345,
+     "ms": 120,
+     "note": "tilt"
+    },
+    {
+     "index": 346,
+     "ms": 900,
+     "note": "coffee?"
+    },
+    {
+     "index": 347,
+     "ms": 120,
+     "note": "tilt"
+    },
+    {
+     "index": 348,
+     "ms": 900,
+     "note": "lunch?"
+    },
+    {
+     "index": 349,
+     "ms": 120,
+     "note": "tilt"
+    },
+    {
+     "index": 350,
+     "ms": 900,
+     "note": "miss u"
+    },
+    {
+     "index": 351,
+     "ms": 120,
+     "note": "tilt"
+    },
+    {
+     "index": 352,
+     "ms": 900,
+     "note": "good job"
+    },
+    {
+     "index": 353,
+     "ms": 120,
+     "note": "tilt"
+    },
+    {
+     "index": 354,
+     "ms": 900,
+     "note": "gn"
+    },
+    {
+     "index": 355,
+     "ms": 120,
+     "note": "tilt"
+    },
+    {
+     "index": 356,
+     "ms": 900,
+     "note": "rawr"
+    }
+   ]
+  },
+  {
+   "id": "F5",
+   "key": "send",
+   "group": "F",
+   "name": "Send",
+   "trigger": "Tap on a phrase",
+   "frames": [
+    {
+     "index": 357,
+     "ms": 300,
+     "note": "folds"
+    },
+    {
+     "index": 358,
+     "ms": 120,
+     "note": "flies"
+    },
+    {
+     "index": 359,
+     "ms": 120,
+     "note": ""
+    },
+    {
+     "index": 360,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 361,
+     "ms": 1000,
+     "note": "sent"
+    }
+   ]
+  },
+  {
+   "id": "F6",
+   "key": "receive",
+   "group": "F",
+   "name": "Receive",
+   "trigger": "Message arrives · two-note ping",
+   "frames": [
+    {
+     "index": 362,
+     "ms": 600,
+     "note": "idle"
+    },
+    {
+     "index": 363,
+     "ms": 150,
+     "note": "ping"
+    },
+    {
+     "index": 364,
+     "ms": 110,
+     "note": "drops"
+    },
+    {
+     "index": 365,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 366,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 367,
+     "ms": 110,
+     "note": "bounce"
+    },
+    {
+     "index": 368,
+     "ms": 500,
+     "note": ""
+    },
+    {
+     "index": 369,
+     "ms": 250,
+     "note": "wiggle"
+    },
+    {
+     "index": 370,
+     "ms": 250,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "F7",
+   "key": "read",
+   "group": "F",
+   "name": "Read and react",
+   "trigger": "Tap the envelope",
+   "frames": [
+    {
+     "index": 371,
+     "ms": 1500,
+     "note": "boop"
+    },
+    {
+     "index": 372,
+     "ms": 1200,
+     "note": "reacts"
+    },
+    {
+     "index": 373,
+     "ms": 600,
+     "note": ""
+    },
+    {
+     "index": 374,
+     "ms": 1500,
+     "note": "coffee"
+    },
+    {
+     "index": 375,
+     "ms": 1200,
+     "note": "reacts"
+    },
+    {
+     "index": 376,
+     "ms": 1500,
+     "note": "miss u"
+    },
+    {
+     "index": 377,
+     "ms": 1400,
+     "note": "reacts"
+    }
+   ]
+  },
+  {
+   "id": "F8",
+   "key": "heart",
+   "group": "F",
+   "name": "Heart reply",
+   "trigger": "Hold 1 s after reading",
+   "frames": [
+    {
+     "index": 378,
+     "ms": 300,
+     "note": "hold"
+    },
+    {
+     "index": 379,
+     "ms": 300,
+     "note": ""
+    },
+    {
+     "index": 380,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 381,
+     "ms": 110,
+     "note": "release"
+    },
+    {
+     "index": 382,
+     "ms": 110,
+     "note": ""
+    },
+    {
+     "index": 383,
+     "ms": 1100,
+     "note": "sent"
+    }
+   ]
+  },
+  {
+   "id": "F9",
+   "key": "taptalk",
+   "group": "F",
+   "name": "Tap talk",
+   "trigger": "Friend > Tap talk · tap a rhythm · 2 s silence sends",
+   "frames": [
+    {
+     "index": 384,
+     "ms": 700,
+     "note": "record"
+    },
+    {
+     "index": 385,
+     "ms": 200,
+     "note": "tap"
+    },
+    {
+     "index": 386,
+     "ms": 250,
+     "note": ""
+    },
+    {
+     "index": 387,
+     "ms": 200,
+     "note": "tap"
+    },
+    {
+     "index": 388,
+     "ms": 400,
+     "note": "hold"
+    },
+    {
+     "index": 389,
+     "ms": 200,
+     "note": "tap"
+    },
+    {
+     "index": 390,
+     "ms": 400,
+     "note": "hold"
+    },
+    {
+     "index": 391,
+     "ms": 900,
+     "note": "sent"
+    },
+    {
+     "index": 392,
+     "ms": 600,
+     "note": "on SAM’s unit"
+    },
+    {
+     "index": 393,
+     "ms": 120,
+     "note": "dot"
+    },
+    {
+     "index": 394,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 395,
+     "ms": 120,
+     "note": "dot"
+    },
+    {
+     "index": 396,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 397,
+     "ms": 400,
+     "note": "dash"
+    },
+    {
+     "index": 398,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 399,
+     "ms": 120,
+     "note": "dot"
+    },
+    {
+     "index": 400,
+     "ms": 200,
+     "note": ""
+    },
+    {
+     "index": 401,
+     "ms": 400,
+     "note": "dash"
+    },
+    {
+     "index": 402,
+     "ms": 800,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "F10",
+   "key": "yawn",
+   "group": "F",
+   "name": "Contagious yawn",
+   "trigger": "A nearby friend shares a mood change",
+   "frames": [
+    {
+     "index": 403,
+     "ms": 900,
+     "note": ""
+    },
+    {
+     "index": 404,
+     "ms": 1100,
+     "note": "friend yawned"
+    },
+    {
+     "index": 405,
+     "ms": 400,
+     "note": ""
+    },
+    {
+     "index": 406,
+     "ms": 1100,
+     "note": "yawns too"
+    },
+    {
+     "index": 407,
+     "ms": 1200,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "F11",
+   "key": "party",
+   "group": "F",
+   "name": "RAWR party",
+   "trigger": "Send RAWR to ALL",
+   "frames": [
+    {
+     "index": 408,
+     "ms": 900,
+     "note": ""
+    },
+    {
+     "index": 409,
+     "ms": 300,
+     "note": ""
+    },
+    {
+     "index": 410,
+     "ms": 140,
+     "note": "RAWR"
+    },
+    {
+     "index": 411,
+     "ms": 140,
+     "note": ""
+    },
+    {
+     "index": 412,
+     "ms": 140,
+     "note": ""
+    },
+    {
+     "index": 413,
+     "ms": 500,
+     "note": ""
+    },
+    {
+     "index": 414,
+     "ms": 400,
+     "note": "giggle"
+    },
+    {
+     "index": 415,
+     "ms": 400,
+     "note": ""
+    }
+   ]
+  }
+ ]
+}

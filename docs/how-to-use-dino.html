@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to use dino</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#1c1d1f;--mute:#5d6166;--line:#dcdad2;--accent:#2f8f5b;--accent-ink:#fff;--pix:#111;--screen:#0b0d0c;--pixon:#8ff0b6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121413;--card:#1b1e1c;--ink:#ecece8;--mute:#a1a6a3;--line:#2e3330;--accent:#59c98a;--accent-ink:#0c1a12}}
+:root[data-theme="dark"]{--bg:#121413;--card:#1b1e1c;--ink:#ecece8;--mute:#a1a6a3;--line:#2e3330;--accent:#59c98a;--accent-ink:#0c1a12}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px;display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+h1{font-size:2rem;margin:0 0 4px}
+h2{font-size:1.35rem;margin:40px 0 8px;padding-top:8px;border-top:1px solid var(--line)}
+h3{font-size:1.05rem;margin:20px 0 6px}
+p{margin:8px 0}
+.lead{color:var(--mute);margin:0}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}
+nav a{color:var(--ink);text-decoration:none;border:1px solid var(--line);background:var(--card);padding:4px 12px;border-radius:999px;font-size:.9rem}
+nav a:hover{border-color:var(--accent)}
+.screen{width:128px;height:64px;background:var(--screen);border:4px solid #333;border-radius:6px;position:relative;flex:none;image-rendering:pixelated}
+.screen i{position:absolute;background:var(--pixon);display:block}
+.screen .e{width:28px;height:30px;top:14px}
+.screen .p{background:var(--screen);width:8px;height:8px;top:25px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:12px 0}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:.95rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:color-mix(in srgb,var(--accent) 12%,var(--card));font-weight:600}
+tr:last-child td{border-bottom:0}
+.scroll{overflow-x:auto}
+kbd{font:600 .85em ui-monospace,Menlo,Consolas,monospace;background:var(--bg);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px}
+.steps{counter-reset:s;list-style:none;padding:0;margin:8px 0}
+.steps li{counter-increment:s;position:relative;padding:6px 0 6px 40px}
+.steps li::before{content:counter(s);position:absolute;left:0;top:6px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:.85rem;display:grid;place-items:center}
+.note{border-left:4px solid var(--accent);background:var(--card);padding:8px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+.warn{border-left-color:#c9892b}
+.tag{display:inline-block;font-size:.75rem;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mute);vertical-align:middle}
+footer{margin-top:48px;color:var(--mute);font-size:.9rem}
+@media (max-width:520px){h1{font-size:1.6rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="screen" role="img" aria-label="The dino's face: two slab eyes with cut-out pupils">
+    <i class="e" style="left:26px"></i><i class="e" style="left:74px;height:28px;top:15px"></i>
+    <i class="p" style="left:42px"></i><i class="p" style="left:90px"></i>
+  </div>
+  <div>
+    <h1>How to use dino</h1>
+    <p class="lead">A small desk dinosaur that lives entirely in its face. This page covers what the current firmware does and how to drive it.</p>
+  </div>
+</header>
+
+<nav>
+  <a href="#start">Power on</a><a href="#controls">Controls</a><a href="#life">Dino's day</a><a href="#menu">Menu</a>
+  <a href="#alarm">Alarm</a><a href="#focus">Focus</a><a href="#stopwatch">Stopwatch</a><a href="#serial">Serial keys</a><a href="#help">Help</a>
+</nav>
+
+<h2 id="start">1. Power on</h2>
+<ol class="steps">
+  <li>Plug dino in with a USB-C data cable (or connect its battery). The face appears on the screen.</li>
+  <li>On start it joins your Wi-Fi once to get the time, then again about once a day. This is the only network use; there is no camera, microphone or cloud.</li>
+  <li>Leave it on its home screen: dino idles, blinks and has small quirks.</li>
+</ol>
+<div class="note warn"><b>No Wi-Fi, no time.</b> If the time was never synced the clock shows <kbd>--:--</kbd> and alarms will not ring. Dino still reacts to touch and motion. Setup steps are in the project README.</div>
+
+<h2 id="controls">2. The five ways to talk to dino</h2>
+<p>Touch pad plus motion. The same gesture does different things depending on the screen.</p>
+<div class="scroll"><table>
+<tr><th>Gesture</th><th>How</th><th>On the home screen</th></tr>
+<tr><td><b>Tap</b></td><td>Touch for less than 0.3 s</td><td>Pets dino: it reacts after a short pause</td></tr>
+<tr><td><b>Double tap</b></td><td>Two taps within 0.4 s</td><td>Shows the time board</td></tr>
+<tr><td><b>Long press</b></td><td>Touch 1.5 s or more and let go before 3 s</td><td>Opens the menu</td></tr>
+<tr><td><b>Hold</b></td><td>Keep touching for 3 s</td><td>Alarm off / dismiss (in those screens)</td></tr>
+<tr><td><b>Tilt left / right</b></td><td>Lean dino about 25 degrees and hold briefly</td><td>Moves through menu cards and changes values. Also plays a tilt reaction</td></tr>
+<tr><td><b>Flip face-down</b></td><td>Lay it face-down for 1 s</td><td>Dismisses a ringing alarm, starts a focus session</td></tr>
+<tr><td><b>Shake / pick up</b></td><td>Move it</td><td>Dino reacts (shaken, picked up)</td></tr>
+</table></div>
+<div class="note">Holding a tilt repeats the move every 0.7 s, so you can scroll through values by keeping it tilted.</div>
+
+<h2 id="life">3. Dino's day (home screen)</h2>
+<p>When no menu or timer is open, dino lives on its own. It never begs for attention or nags.</p>
+<div class="scroll"><table>
+<tr><th>What you do / what happens</th><th>What dino does</th></tr>
+<tr><td>Nothing for a while</td><td>Idles and blinks. Every 2 to 4 minutes it lets out a small <b>RAWR</b></td></tr>
+<tr><td>Tap</td><td>Pet reaction, starting 0.12 to 0.3 s after the touch</td></tr>
+<tr><td>Tap 4 times within 8 s</td><td>Over-petted reaction, then for 10 s further taps only get a glance</td></tr>
+<tr><td>Shake it</td><td>Shaken reaction</td></tr>
+<tr><td>Pick it up</td><td>Picked-up reaction</td></tr>
+<tr><td>Tilt it</td><td>Tilt reaction (it does not repeat faster than every 4 s)</td></tr>
+<tr><td>No input for 5 minutes</td><td>Falls asleep and the screen dims</td></tr>
+<tr><td>Any touch or motion while asleep</td><td>Wakes up</td></tr>
+</table></div>
+<p>Dino also makes short piezo sounds for its voices, the menu and the alarm. Sound is silent only if the buzzer is disabled in the firmware.</p>
+
+<h2 id="menu">4. The menu</h2>
+<p>Long press from the home screen. The menu has five cards. It closes by itself after 10 s without input.</p>
+<ol class="steps">
+  <li><b>Tilt</b> left or right to move to the next card.</li>
+  <li><b>Tap</b> to choose the card.</li>
+  <li><b>Long press</b> (or choose Back) to leave.</li>
+</ol>
+<div class="scroll"><table>
+<tr><th>Card</th><th>What it does</th></tr>
+<tr><td>Clock</td><td>Turns <i>clock mode</i> on or off. When on, the time stays on the home screen. The picture moves 1 px every 3 minutes to protect the OLED from burn-in.</td></tr>
+<tr><td>Alarm</td><td>Set the alarm (section 5)</td></tr>
+<tr><td>Focus</td><td>Start a focus session (section 6)</td></tr>
+<tr><td>Stopwatch</td><td>Open the stopwatch (section 7)</td></tr>
+<tr><td>Back</td><td>Return to the home screen</td></tr>
+</table></div>
+
+<h2 id="alarm">5. Alarm</h2>
+<h3>Set it</h3>
+<ol class="steps">
+  <li>Long press, tilt to <b>Alarm</b>, tap. The time board opens at the <b>current time</b> with the hours blinking.</li>
+  <li><b>Tilt</b> right or left to add or subtract 1 hour.</li>
+  <li><b>Tap</b> to move to the minutes (blinking).</li>
+  <li><b>Tilt</b> to change minutes in steps of 5.</li>
+  <li><b>Tap</b> to save. Dino shows how long until it rings (for example <kbd>+07:30</kbd>) and goes home.</li>
+</ol>
+<ul>
+  <li><b>Hold</b> on the set-alarm screen turns the alarm <b>off</b>.</li>
+  <li><b>Long press</b> leaves without changing anything.</li>
+  <li>The alarm is stored in flash, so it survives a power cut.</li>
+</ul>
+<h3>When it rings</h3>
+<div class="scroll"><table>
+<tr><th>Do</th><th>Result</th></tr>
+<tr><td>Tap</td><td>Snooze: rings again after 5 minutes</td></tr>
+<tr><td>Hold, or flip face-down</td><td>Dismiss. Dino wakes up</td></tr>
+<tr><td>Do nothing</td><td>The sound escalates through three stages, 20 s each, and stops by itself after 10 minutes</td></tr>
+</table></div>
+<div class="note">Alarms follow the real clock. They never wait for an animation to finish.</div>
+
+<h2 id="focus">6. Focus session</h2>
+<ol class="steps">
+  <li>Long press, tilt to <b>Focus</b>, tap.</li>
+  <li><b>Tilt</b> to choose 25, 45 or 60 minutes.</li>
+  <li><b>Tap</b>, or <b>flip dino face-down</b>, to start. Dino reads while the minutes count down on screen.</li>
+  <li>When the time is up dino celebrates, then a <b>5 minute break</b> follows.</li>
+</ol>
+<ul>
+  <li><b>Long press</b> during focus gives up and returns home.</li>
+  <li><b>Tap</b> or <b>long press</b> during the break skips it.</li>
+</ul>
+
+<h2 id="stopwatch">7. Stopwatch</h2>
+<ul>
+  <li>Menu, <b>Stopwatch</b>, tap. It shows <kbd>MM:SS</kbd>.</li>
+  <li><b>Tap</b> pauses or resumes. Dino marks each full minute with a small animation and a sound.</li>
+  <li><b>Long press</b> leaves the stopwatch.</li>
+</ul>
+
+<h2 id="serial">8. No touch pad? Use the keyboard</h2>
+<p>With dino connected by USB and a serial monitor open at 115200 baud, type these keys to stand in for gestures:</p>
+<div class="scroll"><table>
+<tr><th>Key</th><th>Does</th><th>Key</th><th>Does</th></tr>
+<tr><td><kbd>t</kbd></td><td>tap</td><td><kbd>,</kbd> <kbd>.</kbd></td><td>tilt left / right</td></tr>
+<tr><td><kbd>d</kbd></td><td>double tap</td><td><kbd>f</kbd> <kbd>u</kbd></td><td>flip face-down / back up</td></tr>
+<tr><td><kbd>l</kbd></td><td>long press</td><td><kbd>a</kbd></td><td>test alarm at the next minute</td></tr>
+<tr><td><kbd>h</kbd></td><td>hold</td><td><kbd>i</kbd></td><td>info: state, alarm, memory, time, IMU, battery</td></tr>
+<tr><td><kbd>?</kbd></td><td>list every key</td><td><kbd>m</kbd></td><td>mute or unmute the buzzer</td></tr>
+</table></div>
+
+<h2 id="help">9. If something looks wrong</h2>
+<div class="scroll"><table>
+<tr><th>Symptom</th><th>What to try</th></tr>
+<tr><td>Clock shows <kbd>--:--</kbd></td><td>The time has not synced. Check the Wi-Fi name and password in the firmware setup, that the network is 2.4 GHz, and restart dino</td></tr>
+<tr><td>Time is off by hours</td><td>The time zone setting in the firmware is wrong</td></tr>
+<tr><td>Tilt moves the wrong way or too easily</td><td>The motion sensor needs calibrating for this unit (see the IMU calibration guide)</td></tr>
+<tr><td>Menu closed on its own</td><td>It goes home after 10 s without input</td></tr>
+<tr><td>Dino is asleep and the screen is dark</td><td>Touch or move it: it wakes up. It sleeps after 5 minutes of no input</td></tr>
+<tr><td>Taps do almost nothing</td><td>You may have over-petted it. Wait 10 seconds</td></tr>
+</table></div>
+
+<footer>
+  <p>Matches the firmware at checkpoint D4. Not yet in this version: games, friends, settings screen, a firm double tap for RAWR. Build and flash instructions are in the project README.</p>
+</footer>
+</div>
+</body>
+</html>

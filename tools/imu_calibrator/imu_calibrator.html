@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IMU Calibrator</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #16181d; --muted: #646b78; --line: #e2e5ea;
+  --accent: #2f6fe4; --ok: #1f9d55; --warn: #c27c0e; --bad: #d0453c;
+  --x: #d0453c; --y: #1f9d55; --z: #2f6fe4; --grid: #eceef2;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111317; --panel: #1a1d23; --ink: #e8eaee; --muted: #9aa1ad; --line: #2a2e36;
+    --accent: #6e9cff; --ok: #4cc283; --warn: #e3a43c; --bad: #f06b62;
+    --x: #f06b62; --y: #4cc283; --z: #6e9cff; --grid: #23272e;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 2; }
+header h1 { font-size: 16px; margin: 0 12px 0 0; }
+button, select { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:disabled { opacity: .45; cursor: default; }
+button.done { border-color: var(--ok); color: var(--ok); }
+.status { color: var(--muted); font-size: 13px; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); margin-right: 6px; vertical-align: middle; }
+.dot.on { background: var(--ok); }
+main { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 14px; padding: 14px 16px 40px; max-width: 1400px; margin: 0 auto; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+section h2 { font-size: 14px; margin: 0 0 10px; display: flex; justify-content: space-between; align-items: baseline; }
+section h2 small { font-weight: 400; color: var(--muted); }
+.col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.readout { display: grid; grid-template-columns: auto repeat(4, 1fr); gap: 4px 10px; font-family: var(--mono); font-size: 13px; }
+.readout .h { color: var(--muted); font-family: inherit; font-size: 12px; }
+.cx { color: var(--x); } .cy { color: var(--y); } .cz { color: var(--z); }
+canvas { width: 100%; display: block; border-radius: 6px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.step { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+.step:first-of-type { border-top: 0; margin-top: 0; padding-top: 0; }
+.step h3 { margin: 0 0 4px; font-size: 13px; }
+.step p { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+.pill { font-family: var(--mono); font-size: 12px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); }
+.pill.ok { color: var(--ok); border-color: var(--ok); } .pill.warn { color: var(--warn); border-color: var(--warn); } .pill.bad { color: var(--bad); border-color: var(--bad); }
+.six { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.six button { font-family: var(--mono); font-size: 12px; }
+.bar { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .1s linear; }
+pre { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px; font: 12px/1.5 var(--mono); overflow-x: auto; white-space: pre; }
+.log { font: 12px/1.5 var(--mono); color: var(--muted); max-height: 120px; overflow: auto; white-space: pre-wrap; }
+.warnbox { background: color-mix(in srgb, var(--warn) 15%, transparent); border: 1px solid var(--warn); border-radius: 8px; padding: 10px 12px; margin: 12px 16px 0; display: none; }
+label.t { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px; }
+.kv b { font-weight: 500; color: var(--muted); }
+.kv span { font-family: var(--mono); }
+.six button.suggest { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hint { margin: 0 0 8px; padding: 8px 10px; border-radius: 6px; background: var(--bg); border: 1px dashed var(--line); font-size: 13px; }
+.hint.go { border: 1px solid var(--accent); }
+.next { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid var(--accent); font-size: 13px; }
+.next.fin { background: color-mix(in srgb, var(--ok) 14%, transparent); border-color: var(--ok); }
+details { margin: 0; }
+details summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+details ol, details ul { margin: 8px 0 0; padding-left: 20px; color: var(--muted); font-size: 13px; }
+details li { margin: 3px 0; }
+details b { color: var(--ink); }
+.tip { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>IMU Calibrator <span class="status">MPU6050</span></h1>
+  <button id="btnConnect" class="primary">Connect</button>
+  <button id="btnDemo" title="Fake sensor data, to try the page without a board">Demo</button>
+  <select id="rate" title="Sample rate (sent to the board)">
+    <option value="50">50 Hz</option><option value="100" selected>100 Hz</option><option value="200">200 Hz</option>
+  </select>
+  <button id="btnInfo" title="Ask the board for I2C scan + info">Rescan</button>
+  <span class="status"><span id="dot" class="dot"></span><span id="status">Not connected</span></span>
+</header>
+<div id="noSerial" class="warnbox">This browser has no Web Serial. Open this file in <b>Chrome</b> or <b>Edge</b> on a computer (not Safari/Firefox). Demo mode still works.</div>
+
+<main>
+  <div class="col">
+    <section>
+      <h2>Live <small id="rateTxt">— Hz</small></h2>
+      <div class="readout">
+        <span class="h"></span><span class="h cx">X</span><span class="h cy">Y</span><span class="h cz">Z</span><span class="h">|v|</span>
+        <span class="h">accel g</span><span id="ax">–</span><span id="ay">–</span><span id="az">–</span><span id="am">–</span>
+        <span class="h">gyro °/s</span><span id="gx">–</span><span id="gy">–</span><span id="gz">–</span><span id="gm">–</span>
+      </div>
+      <div class="row" style="margin-top:8px; justify-content: space-between">
+        <label class="t"><input type="checkbox" id="useCal" checked> show calibrated values</label>
+        <span class="status">temp <span id="temp">–</span> °C · still <span id="still" class="pill">–</span></span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Orientation <small>roll · pitch from gravity + gyro; yaw drifts (gyro only)</small></h2>
+      <div class="row" style="align-items:flex-start; gap:14px">
+        <canvas id="cube" width="520" height="300" style="flex:1 1 280px; max-width:520px"></canvas>
+        <div class="kv" style="flex:0 0 auto">
+          <b>roll</b><span id="roll">–</span>
+          <b>pitch</b><span id="pitch">–</span>
+          <b>yaw</b><span id="yaw">–</span>
+          <b style="margin-top:8px">device tilt</b><span id="dtilt" style="margin-top:8px">needs step 3</span>
+          <b>device lean</b><span id="dlean">needs step 3</span>
+          <b>face</b><span id="dface">–</span>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px"><button id="btnYaw">Reset yaw</button></div>
+    </section>
+
+    <section>
+      <h2>Accelerometer <small>g · last 6 s</small></h2>
+      <canvas id="plotA" width="900" height="170"></canvas>
+    </section>
+    <section>
+      <h2>Gyroscope <small>°/s · last 6 s</small></h2>
+      <canvas id="plotG" width="900" height="170"></canvas>
+    </section>
+  </div>
+
+  <div class="col">
+    <section>
+      <details id="howto" open>
+        <summary>Before you start (about 5 minutes)</summary>
+        <ol>
+          <li><b>Flash the stream firmware</b> and close every serial monitor: <code>cd firmware &amp;&amp; pio run -e imu_calibrator -t upload</code></li>
+          <li>Use <b>Chrome or Edge</b>, press <b>Connect</b> and pick the ESP32-C3 port. The board messages should show <code>MPU at 0x68</code>. No hardware? Press Demo to rehearse.</li>
+          <li>Let the board run for <b>1–2 minutes</b> first: the gyro drifts while the chip warms up.</li>
+          <li>Work on a <b>solid, level desk</b>. Don't touch the USB cable or the desk during a capture: the bar under the steps shows progress, and the page rejects a capture if you moved.</li>
+          <li>Do the steps in order <b>1, 2, 3</b>. The blue banner always says what to do next. If you redo step 2, step 3 is cleared and must be redone (it depends on step 2).</li>
+          <li>At the end press <b>Copy for config.h</b> and paste it over the <code>IMU_*</code> lines in <code>firmware/include/config.h</code>, then re-flash the normal firmware.</li>
+        </ol>
+      </details>
+    </section>
+
+    <section>
+      <h2>Calibrate <small>keep the board still during each capture</small></h2>
+      <div class="row" style="margin-bottom:8px">
+        <span id="tr1" class="pill">1 gyro</span><span id="tr2" class="pill">2 accel 0/6</span><span id="tr3" class="pill">3 mounting</span><span id="tr4" class="pill">4 copy</span>
+      </div>
+      <p id="nextStep" class="next">Connect the board (or press Demo) to begin.</p>
+
+      <div class="step">
+        <h3>1 · Gyro bias</h3>
+        <p><b>Why:</b> a still gyro should read 0 °/s; its error is the bias. <b>Do:</b> set the board flat on the desk, hands off, wait 1–2 min after power-on, then press the button. 3 s. The firmware keeps re-learning the bias while the dino sits still, so this is only its starting value.</p>
+        <div class="row"><button id="btnGyro">Capture gyro bias (3 s)</button><span id="gyroRes" class="pill">not done</span></div>
+      </div>
+
+      <div class="step">
+        <h3>2 · Accelerometer, 6 positions</h3>
+        <p><b>Why:</b> gravity is exactly 1 g, so each face-up pose shows how wrong each axis is (offset and scale). <b>Do:</b> rest the board on each of its 6 faces, one at a time, <b>as square as you can</b> (prop it against a book or box corner so it can't lean or roll), wait for the hint below to name the face, press that button and keep still for 2 s. Suggested order: Z, then X, then Y, up and down.</p>
+        <div id="sixHint" class="hint">Connect the board to get live hints.</div>
+        <div class="six" id="six"></div>
+        <p class="tip">Good result: every face within 5° of vertical. Which sign (+/−) a physical side gets depends on how the chip is soldered, so trust the hint and the Live accel numbers, not a guess.</p>
+        <div class="row" style="margin-top:8px"><span id="accRes" class="pill">0 / 6</span><button id="btnAccReset">Clear</button></div>
+      </div>
+
+      <div class="step">
+        <h3>3 · Mounting (optional)</h3>
+        <p><b>Why:</b> the chip may be turned or tilted inside the case; this tells the firmware where "up" and "the screen side" really are, so tilt and flip work. <b>Do (a):</b> stand the dino exactly as it sits in use (upright, screen towards you) and press a). <b>Then (b):</b> lay it <b>flat on its screen</b> (screen down on the table, not on an edge) and press b). 1.5 s each, in this order. Needs step 2 first.</p>
+        <div class="row">
+          <button id="btnUp">a) Device standing normally</button>
+          <button id="btnFront">b) Device lying face-down</button>
+          <span id="mountRes" class="pill">not done</span>
+        </div>
+      </div>
+
+      <div class="bar"><i id="prog"></i></div>
+      <p id="capMsg" class="status" style="margin:6px 0 0">&nbsp;</p>
+    </section>
+
+    <section>
+      <h2>Quality check</h2>
+      <div class="kv">
+        <b>|accel| at rest</b><span id="qMag">–</span>
+        <b>gyro at rest</b><span id="qGyro">–</span>
+        <b>accel noise</b><span id="qNoise">–</span>
+      </div>
+      <p class="status" style="margin:8px 0 0">Good: |accel| within ±0.010 g in every orientation, gyro within ±0.3 °/s at rest.</p>
+    </section>
+
+    <section>
+      <h2>Result: paste into firmware/include/config.h <span class="row"><button id="btnCopy">Copy for config.h</button><button id="btnSave">Save JSON</button><label class="t" style="cursor:pointer"><input type="file" id="fileLoad" accept=".json" hidden><u>Load JSON</u></label></span></h2>
+      <pre id="code">// Calibrate to generate the config.h lines</pre>
+    </section>
+
+    <section>
+      <details id="verify">
+        <summary>After pasting: check it (2 minutes)</summary>
+        <ul>
+          <li><b>This page, right now</b> (needs step 3): <b>device tilt</b> must read about 0 when the dino stands upright; tilt the <b>top to the right</b> and it must go <b>+</b>; lean it back and <b>device lean</b> goes <b>+</b>; lay it on its screen and <b>face</b> must read down. If tilt goes the wrong way, redo step 3 (b).</li>
+          <li><b>Quality box:</b> |accel| within ±0.010 g in every pose and gyro within ±0.3 °/s at rest.</li>
+          <li><b>On the device:</b> flash <code>dino_c3</code>, press <code>i</code> in the monitor, then tilt left and right and flip it face-down: the readings and the dino should follow.</li>
+          <li>Save the numbers with <b>Save JSON</b> (store in <code>tools/imu_calibrator/results/</code>) so there is a record. Re-calibrate whenever the IMU is re-mounted.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section>
+      <details id="trouble">
+        <summary>Something wrong?</summary>
+        <ul>
+          <li><b>No data after Connect:</b> a serial monitor is still open, or the board has the other firmware. Close monitors, re-flash <code>imu_calibrator</code>, press Rescan.</li>
+          <li><b>"Moved during capture":</b> don't touch the desk or cable; put the board on something solid and retry.</li>
+          <li><b>"That doesn't look like +Y up":</b> a different axis is pointing up. Read the Live accel numbers: the axis near +1 or −1 is the one to press.</li>
+          <li><b>"N° off vertical" (above 5°):</b> the face wasn't square; prop it better and redo that pose.</li>
+          <li><b>|accel| error above 20 mg after step 2:</b> poses weren't still or square. Press Clear and redo all six slowly.</li>
+          <li><b>Big offsets (above 0.1 g)</b> are normal for cheap modules; what matters is the quality box afterwards.</li>
+          <li><b>Left and right swapped in the firmware:</b> redo step 3, making sure (a) is upright and (b) is screen-down.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section>
+      <h2>Board messages</h2>
+      <div id="log" class="log"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+// ------------------------------------------------------------------ state
+let accLSB = 8192, gyroLSB = 65.5, info = { addr: '?', who: '?' };
+const cal = { gyroBias: [0, 0, 0], accOffset: [0, 0, 0], accScale: [1, 1, 1], gyroDone: false, accDone: false, up: null, front: null };
+const six = {}; // key '+x' etc -> mean raw g vector
+const HIST = 1200; // samples kept for plots
+const hist = [];   // {t, a:[3], g:[3]} calibrated-or-raw per checkbox at draw time
+let last = null;   // last sample {t, aRaw, gRaw, temp}
+let att = { roll: 0, pitch: 0, yaw: 0, t: null };
+let capture = null; // {kind, until, start, buf:[], done(fn)}
+let rateCount = 0, rateT = performance.now();
+const stillWin = []; // last 0.5 s for still detection
+
+const log = msg => { const el = $('log'); el.textContent = (el.textContent + msg + '\n').split('\n').slice(-40).join('\n'); el.scrollTop = 1e9; };
+const fmt = (v, d = 3) => (v >= 0 ? '+' : '') + v.toFixed(d);
+const norm = v => Math.hypot(v[0], v[1], v[2]);
+const unit = v => { const n = norm(v) || 1; return v.map(x => x / n); };
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const mean = arr => [0, 1, 2].map(i => arr.reduce((s, v) => s + v[i], 0) / arr.length);
+const std = arr => { const m = mean(arr); return [0, 1, 2].map(i => Math.sqrt(arr.reduce((s, v) => s + (v[i] - m[i]) ** 2, 0) / arr.length)); };
+const applyAcc = a => a.map((v, i) => (v - cal.accOffset[i]) / cal.accScale[i]);
+const applyGyro = g => g.map((v, i) => v - cal.gyroBias[i]);
+
+// ------------------------------------------------------------------ serial
+let port = null, reader = null, writer = null, demoTimer = null;
+if (!('serial' in navigator)) { $('noSerial').style.display = 'block'; $('btnConnect').disabled = true; }
+
+function setStatus(txt, on) { $('status').textContent = txt; $('dot').classList.toggle('on', !!on); }
+
+async function send(line) {
+  if (writer) { try { await writer.write(line + '\n'); } catch (e) { log('write failed: ' + e.message); } }
+}
+
+$('btnConnect').onclick = async () => {
+  if (port) { await disconnect(); return; }
+  stopDemo();
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+  } catch (e) { port = null; setStatus('Not connected (' + e.message + ')'); return; }
+  setStatus('Connected — waiting for data', true);
+  $('btnConnect').textContent = 'Disconnect';
+  const enc = new TextEncoderStream(); enc.readable.pipeTo(port.writable); writer = enc.writable.getWriter();
+  const dec = new TextDecoderStream(); port.readable.pipeTo(dec.writable).catch(() => {});
+  reader = dec.readable.getReader();
+  send('?'); send('R' + $('rate').value);
+  let buf = '';
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += value;
+      let i;
+      while ((i = buf.indexOf('\n')) >= 0) { handleLine(buf.slice(0, i).trim()); buf = buf.slice(i + 1); }
+    }
+  } catch (e) { log('read stopped: ' + e.message); }
+  await disconnect();
+};
+
+async function disconnect() {
+  try { reader && await reader.cancel(); } catch (e) {}
+  try { writer && await writer.close(); } catch (e) {}
+  try { port && await port.close(); } catch (e) {}
+  reader = writer = port = null;
+  $('btnConnect').textContent = 'Connect';
+  setStatus('Not connected');
+}
+$('rate').onchange = () => send('R' + $('rate').value);
+$('btnInfo').onclick = () => send('?');
+
+function handleLine(line) {
+  if (!line) return;
+  const p = line.split(',');
+  if (p[0] === 'D' && p.length >= 9) {
+    const n = p.map(Number);
+    onSample(n[1], [n[2] / accLSB, n[3] / accLSB, n[4] / accLSB], [n[5] / gyroLSB, n[6] / gyroLSB, n[7] / gyroLSB], n[8] / 100);
+  } else if (p[0] === 'I') {
+    info = { addr: p[1], who: p[2] }; accLSB = +p[3] || accLSB; gyroLSB = +p[4] || gyroLSB;
+    const genuine = p[2] === '0x68';
+    log(`MPU at ${p[1]}, WHO_AM_I ${p[2]}${genuine ? ' (MPU6050)' : ' (clone or MPU6500 family: usually fine)'}, ${accLSB} LSB/g, ${gyroLSB} LSB/dps, ${p[5]} Hz`);
+    setStatus(`Streaming · MPU ${p[1]}`, true);
+    updateCode();
+  } else if (p[0] === 'S') {
+    log('I2C scan: ' + (p.slice(1).join(' ') || 'nothing found'));
+  } else if (p[0] === 'E') {
+    log('board: ' + p.slice(1).join(','));
+    setStatus(p.slice(1).join(','), true);
+  } else log(line);
+}
+
+// ------------------------------------------------------------------ demo (fake board)
+function stopDemo() { if (demoTimer) { clearInterval(demoTimer); demoTimer = null; $('btnDemo').textContent = 'Demo'; } }
+$('btnDemo').onclick = () => {
+  if (demoTimer) { stopDemo(); setStatus('Not connected'); return; }
+  if (port) return;
+  // a fake sensor with known errors, slowly rotating, with still periods
+  const off = [0.035, -0.021, 0.048], sc = [1.012, 0.991, 1.006], gb = [1.3, -0.8, 0.45];
+  let t0 = performance.now();
+  info = { addr: '0x68', who: '0x68 (demo)' };
+  log('demo: fake MPU with accel offset ' + off + ', scale ' + sc + ', gyro bias ' + gb);
+  setStatus('Demo data', true);
+  $('btnDemo').textContent = 'Stop demo';
+  const rnd = () => (Math.random() - 0.5) * 2;
+  demoTimer = setInterval(() => {
+    const t = (performance.now() - t0) / 1000;
+    const phase = Math.floor(t / 8) % 7;  // 8 s per pose, then a moving period
+    const poses = [[0, 0, 1], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, -1]];
+    let up, w = [0, 0, 0];
+    if (phase < 6 && (t % 8) > 1.5) up = poses[phase];
+    else { const s = t * 0.9; up = unit([Math.sin(s), Math.sin(s * 0.7) * 0.6, Math.cos(s)]); w = [40 * Math.cos(s), 30 * Math.sin(s), 20]; }
+    const a = up.map((v, i) => v * sc[i] + off[i] + rnd() * 0.004);
+    const g = w.map((v, i) => v + gb[i] + rnd() * 0.08);
+    onSample(Math.round(t * 1000), a, g, 31.5 + t * 0.01);
+  }, 10);
+};
+
+// ------------------------------------------------------------------ samples
+function onSample(tMs, aRaw, gRaw, temp) {
+  const firstSample = !last;
+  last = { t: tMs, aRaw, gRaw, temp };
+  rateCount++;
+  if (firstSample) updateTracker();  // live data has arrived: the banner moves on from "connect"
+  updateHint();
+  const a = applyAcc(aRaw), g = applyGyro(gRaw);
+  hist.push({ t: tMs, aRaw, gRaw, a, g });
+  if (hist.length > HIST) hist.shift();
+  stillWin.push({ t: tMs, a: aRaw, g: gRaw });
+  while (stillWin.length && tMs - stillWin[0].t > 500) stillWin.shift();
+
+  // complementary filter on calibrated data
+  const dt = att.t == null ? 0 : Math.min(0.1, Math.max(0, (tMs - att.t) / 1000));
+  att.t = tMs;
+  const accRoll = Math.atan2(a[1], a[2]) * 180 / Math.PI;
+  const accPitch = Math.atan2(-a[0], Math.hypot(a[1], a[2])) * 180 / Math.PI;
+  const k = Math.abs(norm(a) - 1) < 0.15 ? 0.02 : 0;  // trust gravity only when not accelerating
+  const wrap = d => ((d + 540) % 360) - 180;
+  att.roll = wrap(att.roll + g[0] * dt); att.roll += k * wrap(accRoll - att.roll);
+  att.pitch = att.pitch + g[1] * dt; att.pitch += k * (accPitch - att.pitch);
+  att.yaw = wrap(att.yaw + g[2] * dt);
+
+  if (capture) {
+    capture.buf.push({ a: aRaw, g: gRaw });
+    const p = Math.min(1, (performance.now() - capture.start) / capture.ms);
+    $('prog').style.width = (p * 100) + '%';
+    if (p >= 1) { const c = capture; capture = null; $('prog').style.width = '0'; c.done(c.buf); }
+  }
+}
+
+function isStill() {
+  if (stillWin.length < 10) return null;
+  const sg = std(stillWin.map(s => s.g)), sa = std(stillWin.map(s => s.a));
+  return Math.max(...sg) < 1.0 && Math.max(...sa) < 0.02;
+}
+
+// ------------------------------------------------------------------ calibration
+function startCapture(ms, label, done) {
+  if (!last) { msg('No data yet — connect the board (or start Demo).', 'bad'); return; }
+  if (capture) return;
+  msg(label + ' — hold still…');
+  capture = { ms, start: performance.now(), buf: [], done };
+}
+function msg(t, cls) { const el = $('capMsg'); el.textContent = t; el.style.color = cls ? css('--' + cls) : ''; }
+function checkStill(buf, maxG = 1.0, maxA = 0.02) {
+  const sg = Math.max(...std(buf.map(s => s.g))), sa = Math.max(...std(buf.map(s => s.a)));
+  return { ok: sg < maxG && sa < maxA, sg, sa };
+}
+function setPill(id, text, cls) { const el = $(id); el.textContent = text; el.className = 'pill ' + (cls || ''); }
+
+$('btnGyro').onclick = () => startCapture(3000, 'Gyro bias', buf => {
+  const s = checkStill(buf);
+  if (!s.ok) { msg(`Moved during capture (gyro noise ${s.sg.toFixed(2)} °/s). Try again without touching.`, 'bad'); return; }
+  cal.gyroBias = mean(buf.map(b => b.g)); cal.gyroDone = true;
+  setPill('gyroRes', 'bias ' + cal.gyroBias.map(v => v.toFixed(2)).join(', ') + ' °/s', 'ok');
+  msg(`Gyro bias captured from ${buf.length} samples, noise ${s.sg.toFixed(2)} °/s.`, 'ok');
+  $('qGyro').textContent = 'bias removed; residual noise ' + s.sg.toFixed(2) + ' °/s';
+  updateCode();
+});
+
+const SIX = ['+x', '-x', '+y', '-y', '+z', '-z'];
+SIX.forEach(k => {
+  const b = document.createElement('button'); b.id = 'six' + k; b.textContent = k.toUpperCase() + ' up';
+  b.onclick = () => startCapture(2000, k.toUpperCase() + ' up', buf => {
+    const s = checkStill(buf);
+    if (!s.ok) { msg(`Moved during capture (accel noise ${s.sa.toFixed(3)} g). Try again.`, 'bad'); return; }
+    const m = mean(buf.map(v => v.a)), ax = 'xyz'.indexOf(k[1]), sign = k[0] === '+' ? 1 : -1;
+    const dom = m.map(Math.abs).indexOf(Math.max(...m.map(Math.abs)));
+    if (dom !== ax || Math.sign(m[ax]) !== sign) { msg(`That doesn't look like ${k.toUpperCase()} up: the reading is ${m.map(v => v.toFixed(2)).join(', ')} g. Turn the board and retry.`, 'bad'); return; }
+    if (Math.abs(norm(m) - 1) > 0.15) { msg('Reading is far from 1 g — check the board is resting, not moving.', 'warn'); }
+    const tilt = Math.acos(Math.min(1, Math.abs(m[ax]) / norm(m))) * 180 / Math.PI;
+    six[k] = m; b.classList.add('done');
+    msg(`${k.toUpperCase()} up captured (${tilt.toFixed(1)}° off vertical${tilt > 5 ? ' — try to sit it squarer' : ''}).`, tilt > 5 ? 'warn' : 'ok');
+    solveSix();
+  });
+  $('six').appendChild(b);
+});
+$('btnAccReset').onclick = () => { SIX.forEach(k => { delete six[k]; $('six' + k).classList.remove('done'); }); cal.accOffset = [0, 0, 0]; cal.accScale = [1, 1, 1]; cal.accDone = false; cal.up = cal.front = null; $('btnUp').classList.remove('done'); $('btnFront').classList.remove('done'); setPill('mountRes', 'not done', ''); updateCode(); setPill('accRes', '0 / 6'); updateCode(); };
+
+function solveSix() {
+  const n = SIX.filter(k => six[k]).length;
+  // solve each axis whose two opposite faces are captured
+  ['x', 'y', 'z'].forEach((c, i) => {
+    const p = six['+' + c], m = six['-' + c];
+    if (p && m) { cal.accOffset[i] = (p[i] + m[i]) / 2; cal.accScale[i] = (p[i] - m[i]) / 2; }
+  });
+  // the mounting vectors were computed with the accel correction: if it changes, they are stale
+  if ((cal.up || cal.front) && SIX.some(k => six[k])) {
+    cal.up = cal.front = null; $('btnUp').classList.remove('done'); $('btnFront').classList.remove('done');
+    setPill('mountRes', 'accel changed: redo a) and b)', 'warn');
+  }
+  cal.accDone = n === 6;
+  setPill('accRes', n + ' / 6' + (cal.accDone ? ' · solved' : ''), cal.accDone ? 'ok' : 'warn');
+  if (cal.accDone) {
+    // residual: |calibrated| at each pose should be 1
+    const errs = SIX.map(k => Math.abs(norm(applyAcc(six[k])) - 1) * 1000);
+    $('qMag').textContent = `max error ${Math.max(...errs).toFixed(1)} mg over the 6 poses`;
+  }
+  updateCode();
+}
+
+$('btnUp').onclick = () => startCapture(1500, 'Standing normally', buf => {
+  const s = checkStill(buf); if (!s.ok) { msg('Moved — try again.', 'bad'); return; }
+  cal.up = unit(applyAcc(mean(buf.map(v => v.a)))); cal.front = null;
+  $('btnUp').classList.add('done'); $('btnFront').classList.remove('done');
+  setPill('mountRes', 'up captured — now (b)', 'warn');
+  msg('Up = ' + cal.up.map(v => v.toFixed(2)).join(', ') + '. Now lay it face-down and press (b).', 'ok');
+  updateCode();
+});
+$('btnFront').onclick = () => {
+  if (!cal.up) { msg('Do (a) first.', 'bad'); return; }
+  startCapture(1500, 'Face-down', buf => {
+    const s = checkStill(buf); if (!s.ok) { msg('Moved — try again.', 'bad'); return; }
+    const r = applyAcc(mean(buf.map(v => v.a)));
+    let f = r.map(v => -v); const d = dot(f, cal.up); f = unit(f.map((v, i) => v - d * cal.up[i]));
+    const angle = Math.acos(Math.max(-1, Math.min(1, dot(unit(r), cal.up)))) * 180 / Math.PI;
+    if (angle < 60) { msg(`Face-down is only ${angle.toFixed(0)}° from upright — turn it fully onto its face and retry.`, 'bad'); return; }
+    cal.front = f; $('btnFront').classList.add('done');
+    setPill('mountRes', 'done', 'ok');
+    msg('Front = ' + f.map(v => v.toFixed(2)).join(', '), 'ok');
+    updateCode();
+  });
+};
+$('btnYaw').onclick = () => { att.yaw = 0; };
+
+// ------------------------------------------------------------------ code output
+// "What next" guidance: progress pills + one banner with the exact next action.
+function updateTracker() {
+  const nSix = SIX.filter(k => six[k]).length, mount = cal.up && cal.front;
+  const set = (id, text, cls) => { const el = $(id); el.textContent = text; el.className = 'pill ' + (cls || ''); };
+  set('tr1', cal.gyroDone ? '1 gyro ✓' : '1 gyro', cal.gyroDone ? 'ok' : '');
+  set('tr2', cal.accDone ? '2 accel 6/6 ✓' : '2 accel ' + nSix + '/6', cal.accDone ? 'ok' : (nSix ? 'warn' : ''));
+  set('tr3', mount ? '3 mounting ✓' : cal.up ? '3 mounting a✓ b…' : '3 mounting', mount ? 'ok' : (cal.up ? 'warn' : ''));
+  const ready = cal.gyroDone && cal.accDone && mount;
+  set('tr4', ready ? '4 copy ✓ ready' : '4 copy', ready ? 'ok' : '');
+  let t;
+  if (!last) t = 'Connect the board (or press Demo) to begin. Wait for live numbers to appear under Live.';
+  else if (!cal.gyroDone) t = 'Next: step 1. Put the board flat on the desk, take your hands off, then press "Capture gyro bias" (3 s).';
+  else if (!cal.accDone) {
+    const left = SIX.filter(k => !six[k]).map(k => k.toUpperCase());
+    t = `Next: step 2 (${nSix}/6 done). Rest the board square on a face you have not done (still to do: ${left.join(', ')}), wait for the hint to name it, press that button, keep still 2 s.`;
+  } else if (!cal.up) t = 'Next: step 3 a). Stand the dino upright exactly as it sits in use (screen towards you), then press "a) Device standing normally".';
+  else if (!cal.front) t = 'Next: step 3 b). Lay the dino flat on its screen (screen down on the table), then press "b) Device lying face-down".';
+  else t = 'All done. Press "Copy for config.h" in the Result box and paste it over the IMU_* lines in firmware/include/config.h. Then use the "check it" list below.';
+  $('nextStep').textContent = t;
+  $('nextStep').className = 'next' + (ready ? ' fin' : '');
+}
+
+// Step 2 live hint: which of the six buttons matches the face the board is resting on right now.
+let hintAt = 0;
+function updateHint() {
+  if (!last) return;
+  const nowT = performance.now();
+  if (nowT - hintAt < 120) return;
+  hintAt = nowT;
+  const a = last.aRaw, m = a.map(Math.abs), i = m.indexOf(Math.max(...m)), n = norm(a) || 1;
+  const key = (a[i] >= 0 ? '+' : '-') + 'xyz'[i];
+  const still = isStill();
+  let txt, go = false, suggest = null;
+  if (cal.accDone) txt = 'All six captured. Move on to step 3.';
+  else if (still === null || !still) txt = 'Moving… set the board down on a face and let go: the hint names the face once it is still.';
+  else if (m[i] / n < 0.85) txt = `Not square yet: no axis clearly points up (biggest is ${a[i].toFixed(2)} g of ${n.toFixed(2)} g). Prop the board so one axis points straight up.`;
+  else if (six[key]) txt = `Resting with ${key.toUpperCase()} up: already captured ✓. Turn it onto a face you have not done.`;
+  else {
+    // raw readings still contain the chip's own offset, so a square pose can read a bit under 1 g: only hint, the capture measures the real tilt
+    const off = m[i] / n < 0.97 ? ` (reads ${a[i].toFixed(2)} g: a little off vertical or a big sensor offset; squarer is better)` : '';
+    txt = `Resting with ${key.toUpperCase()} up and still${off}: press the "${key.toUpperCase()} up" button now (2 s, don't touch).`; go = true; suggest = key;
+  }
+  $('sixHint').textContent = txt;
+  $('sixHint').className = 'hint' + (go ? ' go' : '');
+  SIX.forEach(k => $('six' + k).classList.toggle('suggest', k === suggest));
+}
+
+function updateCode() {
+  updateTracker();
+  // Output = the exact lines of firmware/include/config.h section 4, same names and layout: paste over them.
+  // `name` is padded to `w` chars; a blank sign column keeps positive and negative numbers lined up.
+  const def = (name, v, w) => '#define ' + name.padEnd(w) + ' ' + (v < 0 ? '-' : ' ') + Math.abs(v).toFixed(4) + 'f';
+  const xyz = (prefix, v, w) => ['X', 'Y', 'Z'].map((c, i) => def(prefix + c, v[i], w)).join('\n');
+  const date = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  const nSix = SIX.filter(k => six[k]).length;
+  let s = `// Paste over the IMU_ACC_* ... IMU_FRONT_* lines in firmware/include/config.h (section 4).\n`;
+  s += `// Measured ${date} with tools/imu_calibrator (MPU at ${info.addr}, WHO_AM_I ${info.who}).\n\n`;
+  if (cal.accDone) {
+    s += `// Accel: corrected = (raw_g - OFFSET) / SCALE.\n`;
+    s += xyz('IMU_ACC_OFFSET_', cal.accOffset, 16) + '\n' + xyz('IMU_ACC_SCALE_', cal.accScale, 16) + '\n';
+  } else {
+    s += `// Accel NOT DONE (${nSix}/6 positions): keep the existing IMU_ACC_OFFSET_* / IMU_ACC_SCALE_* lines.\n`;
+  }
+  if (cal.gyroDone) {
+    s += `// Gyro bias (deg/s): starting value only; re-learned at run time while still.\n`;
+    s += xyz('IMU_GYRO_BIAS_', cal.gyroBias, 16) + '\n';
+  } else {
+    s += `// Gyro NOT DONE: keep the existing IMU_GYRO_BIAS_* lines.\n`;
+  }
+  if (cal.up && cal.front) {
+    s += `\n// Mounting, in sensor axes (after the accel correction above).\n`;
+    s += xyz('IMU_UP_', cal.up, 11) + '\n' + xyz('IMU_FRONT_', cal.front, 11) + '\n';
+  } else {
+    s += `\n// Mounting ${cal.up ? 'half done (do step b)' : 'NOT DONE'}: keep the existing IMU_UP_* / IMU_FRONT_* lines.\n`;
+  }
+  $('code').textContent = s;
+  window.__imuCode = s;  // for the desktop test (tools/imu_calibrator/test_page.js)
+}
+
+$('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText($('code').textContent); msg('Copied: paste it over the IMU_* lines in firmware/include/config.h.', 'ok'); } catch (e) { msg('Copy failed: select the text and copy by hand.', 'bad'); } };
+$('btnSave').onclick = () => {
+  const data = JSON.stringify({ savedAt: new Date().toISOString(), info, accLSB, gyroLSB, cal, six }, null, 2);
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+  a.download = 'imu_calibration.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+$('fileLoad').onchange = async e => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const d = JSON.parse(await file.text());
+    Object.assign(cal, d.cal || {}); Object.keys(six).forEach(k => delete six[k]); Object.assign(six, d.six || {});
+    SIX.forEach(k => $('six' + k).classList.toggle('done', !!six[k]));
+    if (cal.gyroDone) setPill('gyroRes', 'bias ' + cal.gyroBias.map(v => v.toFixed(2)).join(', ') + ' °/s', 'ok');
+    if (Object.keys(six).length) solveSix();
+    if (cal.front) setPill('mountRes', 'done', 'ok');
+    msg('Loaded ' + file.name, 'ok'); updateCode();
+  } catch (err) { msg('Could not read that file: ' + err.message, 'bad'); }
+  e.target.value = '';
+};
+
+// ------------------------------------------------------------------ drawing
+function plot(canvas, key, range) {
+  const ctx = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const useCal = $('useCal').checked;
+  const pts = hist.map(h => useCal ? h[key] : h[key + 'Raw']);
+  let r = range;
+  for (const p of pts) for (const v of p) r = Math.max(r, Math.abs(v) * 1.1);
+  ctx.strokeStyle = css('--grid'); ctx.lineWidth = 1; ctx.fillStyle = css('--muted'); ctx.font = '11px system-ui';
+  for (const f of [-1, -0.5, 0, 0.5, 1]) {
+    const y = H / 2 - f * (H / 2 - 6);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    ctx.fillText((f * r).toFixed(r < 5 ? 1 : 0), 4, y - 2);
+  }
+  if (pts.length < 2) return;
+  const n = 600, start = Math.max(0, pts.length - n);
+  ['--x', '--y', '--z'].forEach((c, i) => {
+    ctx.strokeStyle = css(c); ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let j = start; j < pts.length; j++) {
+      const x = (j - start) / (n - 1) * W, y = H / 2 - pts[j][i] / r * (H / 2 - 6);
+      j === start ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  });
+}
+
+function drawCube() {
+  const c = $('cube'), ctx = c.getContext('2d'), W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+  const r = att.roll * Math.PI / 180, p = att.pitch * Math.PI / 180, y = att.yaw * Math.PI / 180;
+  // body -> world: Rz(yaw) * Ry(pitch) * Rx(roll); world Z up
+  const cr = Math.cos(r), sr = Math.sin(r), cp = Math.cos(p), sp = Math.sin(p), cy = Math.cos(y), sy = Math.sin(y);
+  const R = [
+    [cy * cp, cy * sp * sr - sy * cr, cy * sp * cr + sy * sr],
+    [sy * cp, sy * sp * sr + cy * cr, sy * sp * cr - cy * sr],
+    [-sp, cp * sr, cp * cr]];
+  const rot = v => [0, 1, 2].map(i => R[i][0] * v[0] + R[i][1] * v[1] + R[i][2] * v[2]);
+  // camera: from front-right, 25 deg above
+  const ca = -35 * Math.PI / 180, e = 25 * Math.PI / 180, S = Math.min(W, H) / 4.2;
+  const proj = v => {
+    const x = v[0] * Math.cos(ca) - v[1] * Math.sin(ca), yy = v[0] * Math.sin(ca) + v[1] * Math.cos(ca);
+    return [W / 2 + x * S, H / 2 - (v[2] * Math.cos(e) + yy * Math.sin(e)) * S, yy * Math.cos(e) - v[2] * Math.sin(e)];
+  };
+  // board: 2.4 x 1.6 x 0.25 (sensor X along the long side)
+  const bx = 1.2, by = 0.8, bz = 0.12;
+  const V = [[-bx, -by, -bz], [bx, -by, -bz], [bx, by, -bz], [-bx, by, -bz], [-bx, -by, bz], [bx, -by, bz], [bx, by, bz], [-bx, by, bz]].map(v => proj(rot(v)));
+  const F = [[4, 5, 6, 7, 'top'], [0, 3, 2, 1, 'bot'], [0, 1, 5, 4, 's'], [1, 2, 6, 5, 's'], [2, 3, 7, 6, 's'], [3, 0, 4, 7, 's']];
+  F.map(f => ({ f, d: (V[f[0]][2] + V[f[1]][2] + V[f[2]][2] + V[f[3]][2]) / 4 }))
+    .sort((a, b) => b.d - a.d)
+    .forEach(({ f }) => {
+      ctx.beginPath(); for (let i = 0; i < 4; i++) { const q = V[f[i]]; i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); } ctx.closePath();
+      ctx.fillStyle = f[4] === 'top' ? 'rgba(47,111,228,.28)' : f[4] === 'bot' ? 'rgba(120,120,120,.25)' : 'rgba(120,120,120,.14)';
+      ctx.strokeStyle = css('--muted'); ctx.lineWidth = 1; ctx.fill(); ctx.stroke();
+    });
+  // axes
+  const o = proj(rot([0, 0, 0]));
+  [['X', [1.9, 0, 0], '--x'], ['Y', [0, 1.5, 0], '--y'], ['Z', [0, 0, 1.3], '--z']].forEach(([n, v, col]) => {
+    const q = proj(rot(v));
+    ctx.strokeStyle = ctx.fillStyle = css(col); ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(o[0], o[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+    ctx.font = 'bold 13px system-ui'; ctx.fillText(n, q[0] + 4, q[1] - 4);
+  });
+  // gravity reference (world down)
+  const gd = proj([0, 0, -1.4]);
+  ctx.setLineDash([4, 4]); ctx.strokeStyle = css('--muted'); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(o[0], o[1]); ctx.lineTo(gd[0], gd[1]); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = css('--muted'); ctx.font = '11px system-ui'; ctx.fillText('gravity', gd[0] + 4, gd[1]);
+}
+
+function frame() {
+  if (last) {
+    const useCal = $('useCal').checked;
+    const a = useCal ? applyAcc(last.aRaw) : last.aRaw, g = useCal ? applyGyro(last.gRaw) : last.gRaw;
+    ['ax', 'ay', 'az'].forEach((id, i) => $(id).textContent = fmt(a[i]));
+    ['gx', 'gy', 'gz'].forEach((id, i) => $(id).textContent = fmt(g[i], 2));
+    $('am').textContent = norm(a).toFixed(3); $('gm').textContent = norm(g).toFixed(2);
+    $('temp').textContent = last.temp.toFixed(1);
+    const st = isStill(); setPill('still', st == null ? '–' : st ? 'yes' : 'no', st ? 'ok' : 'warn');
+    $('roll').textContent = fmt(att.roll, 1) + '°'; $('pitch').textContent = fmt(att.pitch, 1) + '°'; $('yaw').textContent = fmt(att.yaw, 1) + '°';
+    if (st && stillWin.length > 10) {
+      const sa = Math.max(...std(stillWin.map(s => s.a)));
+      $('qNoise').textContent = (sa * 1000).toFixed(1) + ' mg (std, at rest)';
+      if (cal.accDone) $('qMag').textContent = `now ${fmt(norm(applyAcc(mean(stillWin.map(s => s.a)))) - 1, 4)} g from 1 g` + ($('qMag').dataset.six ? '' : '');
+    }
+    if (cal.up && cal.front) {
+      const ac = applyAcc(last.aRaw), right = unit(cross(cal.up, cal.front));
+      const aU = dot(ac, cal.up), aF = dot(ac, cal.front), aR = dot(ac, right);
+      $('dtilt').textContent = fmt(Math.atan2(-aR, aU) * 180 / Math.PI, 1) + '° (+ = right)';
+      $('dlean').textContent = fmt(Math.atan2(aF, aU) * 180 / Math.PI, 1) + '° (+ = back)';
+      $('dface').textContent = aF < -0.75 ? 'FACE DOWN' : aF > 0.75 ? 'on its back' : aU > 0.5 ? 'upright' : 'on its side';
+    }
+  }
+  const now = performance.now();
+  if (now - rateT > 1000) { $('rateTxt').textContent = Math.round(rateCount * 1000 / (now - rateT)) + ' Hz'; rateCount = 0; rateT = now; }
+  plot($('plotA'), 'a', 1.2); plot($('plotG'), 'g', 20); drawCube();
+  requestAnimationFrame(frame);
+}
+updateCode();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
