@@ -120,6 +120,15 @@
 #define NTP_TIMEOUT_MS          20000             // first answer can take >10 s (seen 2026-10-19)
 #define WIFI_LOW_TX_POWER       1                 // many SuperMini boards only connect at reduced TX power
 
+// Wi-Fi setup ("connect your dino", ADR 005): menu > Wi-Fi. Dino opens its own temporary network "DINO-1234"; the
+// password (8 digits) is shown on its screen; a phone joins it, the setup page opens by itself, and the home Wi-Fi is
+// chosen there. Saved to flash only after it connected. Needs FEATURE_WIFI_TIME.
+#define WIFI_SETUP_WAIT_MIN     5                 // nobody finishes the setup within this long: give up, network off
+#define WIFI_SETUP_CONNECT_S    20                // the home Wi-Fi must accept the credentials within this long
+#define WIFI_SETUP_LINGER_MS    4000              // after "connected": keep the network up this long so the phone page shows it
+#define WIFI_SETUP_MAX_PHONES   2                 // phones that can join the setup network at once
+#define WIFI_SETUP_SCAN_MAX     12                // networks listed on the setup page
+
 // =====================================================================================
 // 7. Utility: alarm, focus, menu (owner decisions: docs/plan-c2-c3.md, step 8)
 // =====================================================================================

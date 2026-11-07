@@ -21,7 +21,7 @@ void Screen::loop(App& app, uint32_t now) {
 // Values that change inside a clip without restarting it (the minute, a countdown...).
 static bool sameValues(const utility::View& a, const utility::View& b) {
   return strcmp(a.text, b.text) == 0 && strcmp(a.note, b.note) == 0 && a.shift == b.shift &&
-         a.night == b.night && a.clockMode == b.clockMode;
+         a.night == b.night && a.clockMode == b.clockMode && strcmp(a.ssid, b.ssid) == 0 && strcmp(a.code, b.code) == 0;
 }
 
 void Screen::build(App& app, const utility::View& v) {

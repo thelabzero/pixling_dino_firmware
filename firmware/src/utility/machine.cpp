@@ -72,11 +72,12 @@ void Machine::goHome(uint32_t now) {
 const char* Machine::stateName() const {
   static const char* const N[] = {"home", "time_board", "menu", "menu_swap", "set_alarm", "set_alarm_done", "ringing",
                                   "snooze", "dismiss", "focus_pick", "focus_start", "focus_work", "focus_done",
-                                  "break", "stopwatch"};
+                                  "break", "stopwatch", "wifi_setup", "wifi_result"};
   return N[(int)state_];
 }
 
 void Machine::startRinging(uint32_t now) {
+  if (state_ == State::WifiSetup || state_ == State::WifiResult) wifiReq_ = WifiRequest::Cancel;  // the alarm wins: close the setup network
   resumeFocus_ = state_ == State::FocusWork || state_ == State::FocusStart;
   resumeBreak_ = state_ == State::Break || state_ == State::FocusDone;
   resumeStopwatch_ = state_ == State::Stopwatch;
@@ -128,7 +129,7 @@ void Machine::handle(Event e, uint32_t now) {
 
     case State::Menu:
       if (e == Event::TiltRight || e == Event::TiltLeft) {
-        menuNext_ = (menu_ + (e == Event::TiltRight ? 1 : 4)) % 5;
+        menuNext_ = (menu_ + (e == Event::TiltRight ? 1 : MENU_SLOTS - 1)) % MENU_SLOTS;
         state_ = State::MenuSwap; show(Clip::MenuSwap, menu_, menuNext_); play(Sound::MenuMove);
       } else if (e == Event::Tap) {
         play(Sound::MenuSelect);
@@ -139,11 +140,16 @@ void Machine::handle(Event e, uint32_t now) {
           case 3:  // Play: games come later; the stopwatch lives here for now
             stopwatchRunning_ = true; swStartMs_ = now; swPausedMs_ = 0; swLastMinute_ = 0;
             go(State::Stopwatch, now); break;
+          case 4: startWifi(); break;                                                // connect your dino (Wi-Fi setup)
           default: goHome(now); break;                                               // back
         }
       } else if (e == Event::LongPress || e == Event::Hold) {
         goHome(now);
       }
+      return;
+
+    case State::WifiSetup:
+      if (e == Event::LongPress || e == Event::Hold) { wifiReq_ = WifiRequest::Cancel; goHome(now); }  // leave: network goes down
       return;
 
     case State::SetAlarm:
@@ -236,14 +242,47 @@ void Machine::clipDone(uint32_t now) {
     case Clip::FocusStart: go(State::FocusWork, now); break;
     case Clip::FocusDone: breakEndMs_ = now + set_.breakMs; go(State::Break, now); break;
     case Clip::StopwatchTap: show(Clip::Stopwatch); refreshTexts(now); break;
+    case Clip::WifiDone: goHome(now); break;
+    case Clip::WifiFail:
+      if (wifiTimedOut_) { wifiTimedOut_ = false; goHome(now); break; }  // the setup ran out of time while the sad clip played
+      state_ = State::WifiSetup; show(Clip::WifiPair, wifiPhone_ ? 1 : 0); break;
     default: break;
   }
+}
+
+void Machine::startWifi() {
+  state_ = State::WifiSetup;
+  wifiPhone_ = wifiTimedOut_ = false;
+  view_.ssid[0] = view_.code[0] = 0;  // the Wi-Fi module fills these in once the network is up
+  wifiReq_ = WifiRequest::Start;
+  show(Clip::WifiPair, 0);
+}
+
+void Machine::setWifiInfo(const char* ssid, const char* code) {
+  strncpy(view_.ssid, ssid ? ssid : "", sizeof(view_.ssid) - 1); view_.ssid[sizeof(view_.ssid) - 1] = 0;
+  strncpy(view_.code, code ? code : "", sizeof(view_.code) - 1); view_.code[sizeof(view_.code) - 1] = 0;
+}
+
+void Machine::onWifi(WifiEvent e, uint32_t now) {
+  if (state_ == State::WifiResult && e == WifiEvent::TimedOut) { wifiTimedOut_ = true; return; }
+  if (state_ != State::WifiSetup) return;  // late news from a setup that is already closed
+  switch (e) {
+    case WifiEvent::PhoneJoined: wifiPhone_ = true; show(Clip::WifiPair, 1); break;
+    case WifiEvent::PhoneLeft: wifiPhone_ = false; show(Clip::WifiPair, 0); break;
+    case WifiEvent::Connecting: show(Clip::WifiPair, 2); break;
+    case WifiEvent::Connected:
+      state_ = State::WifiResult; show(Clip::WifiDone); play(Sound::AlarmSet); break;   // alarm_set = the happy warble
+    case WifiEvent::Failed:
+      state_ = State::WifiResult; show(Clip::WifiFail); play(Sound::Snooze); break;     // snooze = the grumpy "hmph"
+    case WifiEvent::TimedOut: goHome(now); return;
+  }
+  refreshTexts(now);
 }
 
 void Machine::refreshTexts(uint32_t now) {
   char t[8];
   switch (view_.clip) {
-    case Clip::Home: case Clip::TimeBoard:
+    case Clip::Home: case Clip::TimeBoard: case Clip::WifiDone:
       timeText(t); setText(t); break;
     case Clip::SetAlarm: case Clip::SetAlarmTilt: case Clip::SetAlarmDone: {
       const Alarm& a = state_ == State::SetAlarmDone ? alarm_ : editing_;

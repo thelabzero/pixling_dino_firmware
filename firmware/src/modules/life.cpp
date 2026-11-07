@@ -91,7 +91,7 @@ void Life::buildHome(const utility::View&, scenes::LiveClip& out) const {
 
 bool Life::onKey(App&, char c) {
   if (c == 'n') { brain_.nextNow(millis()); Serial.println("[life] rawr now"); return true; }
-  if (c == 's') { brain_.playNow(life::Act::FallAsleep, millis()); Serial.println("[life] falling asleep"); return true; }
+  if (c == 'z') { brain_.playNow(life::Act::FallAsleep, millis()); Serial.println("[life] falling asleep"); return true; }
   if (c == 'v') {  // every life clip in turn, to see them all
     static const life::Act TOUR[] = {life::Act::Glance, life::Act::Pet, life::Act::Overpet, life::Act::Rawr,
                                      life::Act::Shake, life::Act::PickUp, life::Act::Tilt, life::Act::FallAsleep};

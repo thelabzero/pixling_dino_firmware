@@ -4,12 +4,13 @@
 #include <sys/time.h>
 #include "esp_sntp.h"
 #include "config.h"
+#include "wifi_creds.h"
 
 #if __has_include("secrets.h")
 #include "secrets.h"
-#define DINO_HAVE_WIFI 1
+#define DINO_HAVE_SECRETS 1   // developer fallback when nothing was saved by the setup
 #else
-#define DINO_HAVE_WIFI 0  // copy include/secrets.example.h to include/secrets.h
+#define DINO_HAVE_SECRETS 0
 #define WIFI_SSID ""
 #define WIFI_PASS ""
 #endif
@@ -31,12 +32,33 @@ void WifiTime::begin() {
   tzset();
   sntp_set_time_sync_notification_cb(onTimeSynced);
   wifiOff();
-  if (!DINO_HAVE_WIFI) {
+  haveCreds_ = wificreds::load(ssid_, sizeof ssid_, pass_, sizeof pass_);  // saved by the setup (menu > Wi-Fi)
+  if (!haveCreds_ && DINO_HAVE_SECRETS && WIFI_SSID[0]) {
+    strncpy(ssid_, WIFI_SSID, sizeof ssid_ - 1); strncpy(pass_, WIFI_PASS, sizeof pass_ - 1);
+    haveCreds_ = true;
+  }
+  if (!haveCreds_) {
     state_ = State::NoCredentials;
-    Serial.println("[time] no include/secrets.h: copy secrets.example.h and add your Wi-Fi. Clock shows --:--");
+    Serial.println("[time] no Wi-Fi saved: long press > Wi-Fi to connect your dino. Clock shows --:--");
     return;
   }
   schedule_.start(millis());
+}
+
+void WifiTime::setCredentials(const char* ssid, const char* pass) {
+  strncpy(ssid_, ssid, sizeof ssid_ - 1); ssid_[sizeof ssid_ - 1] = 0;
+  strncpy(pass_, pass ? pass : "", sizeof pass_ - 1); pass_[sizeof pass_ - 1] = 0;
+  haveCreds_ = true;
+  if (state_ == State::NoCredentials) state_ = State::Idle;
+  schedule_.start(millis());  // sync now, and forget old back-off
+}
+
+void WifiTime::holdOff(bool on) {
+  hold_ = on;
+  if (on && (state_ == State::Connecting || state_ == State::Syncing)) {  // drop a sync in progress; it is retried after the setup
+    wifiOff();
+    state_ = State::Idle;
+  }
 }
 
 void WifiTime::syncNow() {
@@ -80,14 +102,15 @@ void WifiTime::finish(bool ok, const char* why) {
 
 void WifiTime::loop() {
   const uint32_t now = millis();
+  if (hold_) return;  // the setup portal is using the radio
   switch (state_) {
     case State::NoCredentials:
       return;
     case State::Idle:
       if (!schedule_.due(now)) return;
-      Serial.printf("[time] connecting to Wi-Fi \"%s\"...\n", WIFI_SSID);
+      Serial.printf("[time] connecting to Wi-Fi \"%s\"...\n", ssid_);
       WiFi.mode(WIFI_STA);
-      WiFi.begin(WIFI_SSID, WIFI_PASS);
+      WiFi.begin(ssid_, pass_);
 #if WIFI_LOW_TX_POWER
       WiFi.setTxPower(WIFI_POWER_8_5dBm);
 #endif

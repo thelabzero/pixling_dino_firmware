@@ -5,7 +5,7 @@ The firmware for dino, the pixel dinosaur on your desk: an ESP32-C3 SuperMini wi
 ## Quick start
 
 1. Install [VS Code](https://code.visualstudio.com/) with the **PlatformIO** extension, or the PlatformIO command line. The project's own copy is `.venv/bin/pio` (create it with `python3 -m venv .venv && .venv/bin/pip install platformio pyserial pillow`).
-2. Wi-Fi for the clock: copy `include/secrets.example.h` to `include/secrets.h` and fill in your network. (`secrets.h` is never committed.)
+2. Wi-Fi for the clock: on the device, long press > **Wi-Fi** and follow the screen ("connect your dino", ADR 005). For development you can instead copy `include/secrets.example.h` to `include/secrets.h` and fill in your network (a network saved on the device wins; `secrets.h` is never committed).
 3. Connect the board over USB-C, then from this folder:
 
 ```
@@ -24,6 +24,7 @@ Add `-f time` to the monitor to put a time stamp on every line. On start-up the 
 | Alarm ringing | Tap = snooze 5 min. Hold or flip face-down = dismiss. Stops by itself after 10 min |
 | Menu → Focus | Tilt to pick the length, tap or flip face-down to start. Long press = give up. A break follows |
 | Menu → Stopwatch | Tap = pause/resume, long press = exit |
+| Menu → Wi-Fi | "Connect your dino": join the `DINO-xxxx` network on your phone with the password on the screen, pick your Wi-Fi on the page that opens. Long press = cancel. Gives up after 5 min |
 
 On the home screen dino lives its day (times and weights in `config.h` and `src/life/`): it wakes up, idles with small quirks, naps, gets drowsy in the evening and sleeps at night with the screen dimmed. Taps, shakes, pick-ups and tilts get a reaction.
 
@@ -51,6 +52,7 @@ src/
   sound/              dino sounds as tables + the tone player. Pure C++, desktop-tested
   drivers/            MPU6050, Wi-Fi time sync
   timekeeping/        sync schedule, time formatting. Pure C++, desktop-tested
+  wifi/               Wi-Fi setup rules: credential checks, form decoding, the pairing session. Pure C++, desktop-tested
   players/            stand-alone hardware checks (one env each)
 test/                 desktop unit tests
 ```
@@ -80,7 +82,7 @@ On the device, `p` plays them one by one. Overall loudness: `BUZZER_VOLUME` in `
 
 | After changing | Run | Expect |
 |---|---|---|
-| `utility/`, `life/`, `input/`, `sound/`, `timekeeping/` | `pio test -e native` | all tests pass |
+| `utility/`, `life/`, `input/`, `sound/`, `timekeeping/`, `wifi/` | `pio test -e native` | all tests pass |
 | `face/`, `scenes/` | `python3 tools/face_check.py` (repo root) | all frames match (double and float) |
 | anything | `pio run -e dino_c3` | builds with no warnings |
 

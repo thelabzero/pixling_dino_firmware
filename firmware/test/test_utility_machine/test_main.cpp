@@ -45,8 +45,8 @@ void test_menu_navigation_and_back() {
   TEST_ASSERT_TRUE(clip() == Clip::MenuSwap); TEST_ASSERT_EQUAL(0, m.view().a); TEST_ASSERT_EQUAL(1, m.view().b);
   done();
   TEST_ASSERT_TRUE(clip() == Clip::Menu); TEST_ASSERT_EQUAL(1, m.view().a);
-  ev(Event::TiltLeft); done(); ev(Event::TiltLeft); done();   // 1 -> 0 -> 4 (wraps)
-  TEST_ASSERT_EQUAL(4, m.view().a);
+  ev(Event::TiltLeft); done(); ev(Event::TiltLeft); done();   // 1 -> 0 -> 5 (wraps to Back)
+  TEST_ASSERT_EQUAL(5, m.view().a);
   ev(Event::Tap);                                              // back
   TEST_ASSERT_TRUE(clip() == Clip::Home);
 }
@@ -241,6 +241,107 @@ void test_menu_stays_open_when_input_is_newer_than_tick() {
   TEST_ASSERT_TRUE(clip() == Clip::Menu);
 }
 
+
+// ---- Wi-Fi setup ("connect your dino"): menu slot 4
+static void openWifi() { ev(Event::LongPress); for (int i = 0; i < 4; i++) { ev(Event::TiltRight); done(); } ev(Event::Tap); }
+
+void test_wifi_menu_slot_starts_pairing() {
+  drain();
+  openWifi();
+  TEST_ASSERT_TRUE(clip() == Clip::WifiPair); TEST_ASSERT_EQUAL(0, m.view().a);
+  TEST_ASSERT_TRUE(m.takeWifiRequest() == WifiRequest::Start);
+  TEST_ASSERT_TRUE(m.takeWifiRequest() == WifiRequest::None);   // read once
+  TEST_ASSERT_TRUE(strcmp(m.stateName(), "wifi_setup") == 0);
+  m.setWifiInfo("DINO-1234", "K7M2QX9PH4");
+  TEST_ASSERT_EQUAL_STRING("DINO-1234", m.view().ssid); TEST_ASSERT_EQUAL_STRING("K7M2QX9PH4", m.view().code);
+}
+
+void test_wifi_pairing_phases_follow_the_session() {
+  openWifi(); m.takeWifiRequest();
+  const uint32_t s0 = m.view().serial;
+  m.onWifi(WifiEvent::PhoneJoined, T);
+  TEST_ASSERT_TRUE(clip() == Clip::WifiPair); TEST_ASSERT_EQUAL(1, m.view().a); TEST_ASSERT_TRUE(m.view().serial != s0);
+  m.onWifi(WifiEvent::PhoneLeft, T);   TEST_ASSERT_EQUAL(0, m.view().a);
+  m.onWifi(WifiEvent::PhoneJoined, T);
+  m.onWifi(WifiEvent::Connecting, T);  TEST_ASSERT_EQUAL(2, m.view().a);
+}
+
+void test_wifi_connected_plays_happy_clip_with_time_then_home() {
+  at(10, 24); run(100);
+  openWifi(); m.takeWifiRequest(); drain();
+  m.onWifi(WifiEvent::Connecting, T);
+  m.onWifi(WifiEvent::Connected, T);
+  TEST_ASSERT_TRUE(clip() == Clip::WifiDone);
+  TEST_ASSERT_TRUE(strcmp(m.view().text, "10:24") == 0);          // "show the time"
+  TEST_ASSERT_EQUAL(1, countSound(Sound::AlarmSet));
+  ev(Event::LongPress);                                            // one-shot: input ignored
+  TEST_ASSERT_TRUE(clip() == Clip::WifiDone);
+  done();
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+  TEST_ASSERT_TRUE(m.takeWifiRequest() == WifiRequest::None);     // nothing to cancel: the module closes it itself
+}
+
+void test_wifi_failed_plays_sad_clip_then_back_to_pairing() {
+  openWifi(); m.takeWifiRequest(); drain();
+  m.onWifi(WifiEvent::PhoneJoined, T); m.onWifi(WifiEvent::Connecting, T);
+  m.onWifi(WifiEvent::Failed, T);
+  TEST_ASSERT_TRUE(clip() == Clip::WifiFail);
+  TEST_ASSERT_EQUAL(1, countSound(Sound::Snooze));
+  done();
+  TEST_ASSERT_TRUE(clip() == Clip::WifiPair); TEST_ASSERT_EQUAL(1, m.view().a);   // the phone is still joined
+  TEST_ASSERT_TRUE(strcmp(m.stateName(), "wifi_setup") == 0);
+}
+
+void test_wifi_long_press_cancels() {
+  openWifi(); m.takeWifiRequest();
+  ev(Event::LongPress);
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+  TEST_ASSERT_TRUE(m.takeWifiRequest() == WifiRequest::Cancel);
+  openWifi(); m.takeWifiRequest();
+  ev(Event::Hold);
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+  TEST_ASSERT_TRUE(m.takeWifiRequest() == WifiRequest::Cancel);
+}
+
+void test_wifi_tap_does_nothing_and_no_idle_timeout() {
+  openWifi(); m.takeWifiRequest();
+  ev(Event::Tap); ev(Event::DoubleTap); ev(Event::TiltLeft);
+  TEST_ASSERT_TRUE(clip() == Clip::WifiPair);
+  run(Settings().menuIdleMs * 6);                                  // the menus give up after 10 s, pairing does not
+  TEST_ASSERT_TRUE(clip() == Clip::WifiPair);
+}
+
+void test_wifi_timeout_goes_home() {
+  openWifi(); m.takeWifiRequest();
+  m.onWifi(WifiEvent::TimedOut, T);
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+}
+
+void test_wifi_timeout_during_sad_clip_goes_home_after_it() {
+  openWifi(); m.takeWifiRequest();
+  m.onWifi(WifiEvent::Connecting, T); m.onWifi(WifiEvent::Failed, T);
+  m.onWifi(WifiEvent::TimedOut, T);                                // arrives while the sad clip plays
+  TEST_ASSERT_TRUE(clip() == Clip::WifiFail);
+  done();
+  TEST_ASSERT_TRUE(clip() == Clip::Home);                          // not back to a pairing screen with the network gone
+}
+
+void test_wifi_news_is_ignored_when_not_pairing() {
+  m.onWifi(WifiEvent::Connected, T);
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+  m.onWifi(WifiEvent::PhoneJoined, T);
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+}
+
+void test_alarm_during_wifi_setup_rings_and_closes_the_network() {
+  at(10, 29); run(100);
+  Alarm a; a.enabled = true; a.hour = 10; a.minute = 30; m.setAlarm(a);
+  openWifi(); m.takeWifiRequest();
+  at(10, 30); run(200);
+  TEST_ASSERT_TRUE(clip() == Clip::AlarmRing);                    // utility is exact: the alarm never waits for pairing
+  TEST_ASSERT_TRUE(m.takeWifiRequest() == WifiRequest::Cancel);
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_home_shows_dashes_until_synced);
@@ -260,5 +361,15 @@ int main(int, char**) {
   RUN_TEST(test_focus_pick_work_done_break);
   RUN_TEST(test_alarm_during_focus_resumes_focus);
   RUN_TEST(test_stopwatch_counts_pauses_and_taps);
+  RUN_TEST(test_wifi_menu_slot_starts_pairing);
+  RUN_TEST(test_wifi_pairing_phases_follow_the_session);
+  RUN_TEST(test_wifi_connected_plays_happy_clip_with_time_then_home);
+  RUN_TEST(test_wifi_failed_plays_sad_clip_then_back_to_pairing);
+  RUN_TEST(test_wifi_long_press_cancels);
+  RUN_TEST(test_wifi_tap_does_nothing_and_no_idle_timeout);
+  RUN_TEST(test_wifi_timeout_goes_home);
+  RUN_TEST(test_wifi_timeout_during_sad_clip_goes_home_after_it);
+  RUN_TEST(test_wifi_news_is_ignored_when_not_pairing);
+  RUN_TEST(test_alarm_during_wifi_setup_rings_and_closes_the_network);
   return UNITY_END();
 }

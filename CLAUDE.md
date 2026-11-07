@@ -5,11 +5,11 @@ Read this first in every session. Keep it short and current: update "Where we ar
 ## Where we are
 
 - **Brand:** Pixling (characters made of pixels). Dino is a Pixling, a small desk dinosaur that lives entirely in its face. The design sheet still says "Deskimon" (old brand, dropped): use "dino".
-- **Origin:** standalone side project. Firmware, tools and tests share one base (ADR 003); the character layer (face, scenes, life, sounds) is dino's own.
+- **Origin:** standalone side project, independent of any other character (no Miso). The design sheet still mentions Miso in a few notes; ignore them. Firmware, tools and tests share one base (ADR 003); the character layer (face, scenes, life, sounds) is dino's own.
 - **Phase:** v1 = Face + Life + Utility (sheet groups R, L, U). Games (G) and Friends (F) come later.
-- **Checkpoint:** D0-D3 done. D4 code complete (dino face, life brain, live utility screens, sounds, pipelined screen), 65 native tests + face check pass, chip build ok; NOT yet run on the board (flash `dino_c3`). Known gaps and next steps: `docs/checkpoints.md`.
+- **Checkpoint:** D0-D3 done. D4 code complete and run on the board 2026-11-07 (`docs/d4-board-checklist.md`: no resets in 56 min, alarm, focus, stopwatch, touch, sounds, life all work); still open: alarm hold-dismiss, alarm kept after reset, how the clips look vs the sheet. New: Wi-Fi setup "connect your dino" (menu > Wi-Fi, SoftAP captive portal, ADR 005): code complete, 95 native tests + face check pass, all envs build; NOT yet run on the board (`docs/wifi-setup-checklist.md`). Known gaps and next steps: `docs/checkpoints.md`.
 - **Design ground truth:** `art/reference/dino-v1/` (the sheet and its exported frames). Never hand-edit.
-- **Last updated:** 2026-10-29
+- **Last updated:** 2026-11-07
 
 ## What Dino is
 
