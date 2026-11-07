@@ -7,9 +7,10 @@ int main() {
   static face::Grid g, ref;
   int bad = 0;
   utility::View v;
-  for (int c = 0; c < (int)utility::Clip::StopwatchTap + 1; c++) {
+  for (int c = 0; c < (int)utility::Clip::WifiFail + 1; c++) {
     v = utility::View();
     v.clip = (utility::Clip)c; v.a = 1; v.b = 2; v.shift = 3;
+    strcpy(v.ssid, "DINO-4821"); strcpy(v.code, "K7M2QX9PH4");
     strcpy(v.text, c == (int)utility::Clip::Stopwatch ? "01:30" : "10:24"); strcpy(v.note, "+0:42");
     scenes::LiveClip lc;
     scenes::buildLive(v, lc);

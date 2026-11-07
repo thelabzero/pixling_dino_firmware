@@ -12,12 +12,26 @@ using utility::View;
 
 namespace {
 
-// ---- menu: 5 cards (the brain's slots). Clock, Alarm, Focus, Stopwatch, Back. Games/Friends/Messages/Settings of
+// ---- menu: 6 cards (the brain's slots). Clock, Alarm, Focus, Stopwatch, Wi-Fi, Back. Games/Friends/Messages/Settings of
 // the sheet's 8-card menu come when those features exist.
+constexpr int SLOTS = utility::Machine::MENU_SLOTS;
 struct Card { Icon icon; const char* label; Ex ex; };
-const Card CARDS[5] = {{Icon::Clock, "CLOCK", Ex::Smug}, {Icon::Alarm, "ALARM", Ex::Surprised}, {Icon::Focus, "FOCUS", Ex::Focus},
-                       {Icon::Clock, "STOPWATCH", Ex::Determined}, {Icon::Back, "BACK", Ex::Idle}};
-constexpr int STOPWATCH_SLOT = 3;
+const Card CARDS[SLOTS] = {{Icon::Clock, "CLOCK", Ex::Smug}, {Icon::Alarm, "ALARM", Ex::Surprised}, {Icon::Focus, "FOCUS", Ex::Focus},
+                           {Icon::Clock, "STOPWATCH", Ex::Determined}, {Icon::Clock, "WI-FI", Ex::Curious}, {Icon::Back, "BACK", Ex::Idle}};
+constexpr int STOPWATCH_SLOT = 3, WIFI_SLOT = 4, BACK_SLOT = 5;  // slots whose icon is drawn in code (the sheet has none) / the Back card
+
+// The Wi-Fi logo (the sheet has none): a dot and up to `level` (0-3) arcs above it, drawn from the dot at (cx, cy).
+void wifiLogo(Grid& g, int cx, int cy, int level) {
+  fillRect(g, cx - 1, cy - 1, cx, cy);
+  static const real R[3] = {5, 9, 13};
+  for (int i = 0; i < level && i < 3; i++) {
+    const real r = R[i], ccx = cx, ccy = cy;
+    area(g, [=](real x, real y) {
+      const real dx = x - ccx, dy = y - ccy;
+      return dy < 0 && -dy >= fabs(dx) * 0.9 && fabs(sqrt(dx * dx + dy * dy) - r) <= 0.8;  // a 90-degree arc, about 1.5 px thick
+    }, bE(cx, cy, r, r, 1));
+  }
+}
 
 // The sheet has no stopwatch icon: a small one in the same 16x16, 1 px line style.
 void stopwatchIcon(Grid& g, int x, int y) {
@@ -31,16 +45,17 @@ Draw mcard(int slot, int dx = 0, int dy = 0) {
   return fn([=](Grid& g) {
     card(g, 58 + dx, 5 + dy, 28, 26);
     if (slot == STOPWATCH_SLOT) stopwatchIcon(g, 64 + dx, 10 + dy);
+    else if (slot == WIFI_SLOT) wifiLogo(g, 72 + dx, 24 + dy, 3);
     else stampIcon(g, CARDS[slot].icon, 64 + dx, 10 + dy);
   });
 }
 Draw mdots(int i) {
   return fn([=](Grid& g) {
-    for (int k = 0; k < 5; k++) { int x = 60 + k * 6; if (k == i) fillRect(g, x - 1, 54, x + 2, 57); else fillRect(g, x, 55, x + 1, 56); }
+    for (int k = 0; k < SLOTS; k++) { int x = 57 + k * 6; if (k == i) fillRect(g, x - 1, 54, x + 2, 57); else fillRect(g, x, 55, x + 1, 56); }
   });
 }
 // Face in the menu: 1 px left of the sheet anchor (ADR 004) so it never touches the arrow.
-FaceO menuLook(int slot, real ly = -0.2) { return slot == 4 ? FaceO().x(23).look(-1, 0) : FaceO().x(23).look(1, ly); }
+FaceO menuLook(int slot, real ly = -0.2) { return slot == BACK_SLOT ? FaceO().x(23).look(-1, 0) : FaceO().x(23).look(1, ly); }
 Draw menuArrows() { return fn([](Grid& g) { text(g, "<", 52, 15, Font::Small); text(g, ">", 91, 15, Font::Small); }); }
 Draw spd(int x, int y0, int y1) { return fn([=](Grid& g) { speed(g, x, y0, y1); }); }
 
@@ -72,11 +87,11 @@ void takeSheet(LiveClip& out, const char* key, const std::string& time, int from
 
 // ---- the clips ----
 __attribute__((noinline)) void menu(LiveClip& c, const View& v) {
-  const int s = v.a % 5;
+  const int s = v.a % SLOTS;
   c.frames.push_back(fr(1100, "", {sm(CARDS[s].ex, menuLook(s)), mcard(s), tc(CARDS[s].label, 72, 40), mdots(s), menuArrows()}));
 }
 __attribute__((noinline)) void menuSwap(LiveClip& c, const View& v) {
-  const int a = v.a % 5, b = v.b % 5;
+  const int a = v.a % SLOTS, b = v.b % SLOTS;
   c.frames.push_back(fr(120, "slide", {sm(Ex::Idle, FaceO().x(23).look(1, 0)), mcard(a, 5), spd(52, 9, 27), mdots(a)}));
   c.frames.push_back(fr(120, "swap", {sm(Ex::Idle, FaceO().x(23).look(1, -0.4)), mdots(b)}));
   c.frames.push_back(fr(120, "pop", {sm(Ex::Idle, FaceO().x(23).look(1, -0.4)), mcard(b, 0, -2), mdots(b)}));
@@ -175,6 +190,71 @@ __attribute__((noinline)) void timeBoard(LiveClip& c, const View& v) {
   c.loop = false;
 }
 
+// ---- Wi-Fi setup ("connect your dino"). The dino looks for Wi-Fi: its eyes sweep around while the logo's arcs light up.
+Draw wifiAt(int cx, int cy, int level, bool cross = false) {
+  return fn([=](Grid& g) {
+    wifiLogo(g, cx, cy, level);
+    if (cross) { line(g, cx - 7, cy - 12, cx + 7, cy + 1); line(g, cx - 7, cy - 11, cx + 7, cy + 2); }  // "no Wi-Fi": a slash through it
+  });
+}
+Draw lines3(const char* a, const char* b, const char* c) {
+  return fn([=](Grid& g) { textC(g, a, 88, 31); textC(g, b, 88, 40); if (c) textC(g, c, 88, 49); });
+}
+
+// Waiting for a phone: three screens in a loop. 1: the message with the logo searching. 2: how to join (network + password).
+__attribute__((noinline)) void wifiWaiting(LiveClip& c, const View& v) {
+  static const struct { real lx, ly; } SWEEP[4] = {{1, -0.5}, {0.2, -0.6}, {-0.5, -0.2}, {1, -0.4}};  // up-right, up, left, back to the logo
+  const char* const title[3] = {"CONNECT YOUR", "DINO TO SHOW", "THE TIME"};
+  for (int k = 0; k < 8; k++) {   // two sweeps of the logo: 0, 1, 2, 3 arcs
+    const int level = k % 4;
+    c.frames.push_back(fr(300, "", {sm(Ex::Curious, FaceO().look(SWEEP[level].lx, SWEEP[level].ly)), wifiAt(88, 23, level),
+                                    lines3(title[0], title[1], title[2])}));
+  }
+  c.frames.push_back(fr(90, "blink", {sm(Ex::Curious, FaceO().E(SHUT)), wifiAt(88, 23, 3), lines3(title[0], title[1], title[2])}));
+  // join info: "JOIN WI-FI" / DINO-1234 / "PASSWORD" / XXXXX XXXXX
+  std::string code = v.code;
+  if (code.size() == 10) code.insert(5, " ");   // "XXXXX XXXXX": easier to read and type
+  const std::string ssid = v.ssid[0] ? v.ssid : "...";
+  Draw info = fn([=](Grid& g) {
+    textC(g, "JOIN WI-FI", 88, 6); textC(g, ssid.c_str(), 88, 17);
+    textC(g, "PASSWORD", 88, 33); textC(g, code.c_str(), 88, 44);
+  });
+  c.frames.push_back(fr(3600, "join", {sm(Ex::Idle, FaceO().look(1, -0.1)), info}));
+  c.frames.push_back(fr(90, "blink", {sm(Ex::Idle, FaceO().E(SHUT)), info}));
+  c.frames.push_back(fr(900, "", {sm(Ex::Idle, FaceO().look(1, -0.1)), info}));
+}
+// A phone is on the setup network: the page is open there. The logo is lit and pulses.
+__attribute__((noinline)) void wifiJoined(LiveClip& c) {
+  const Draw t = lines3("FINISH ON", "YOUR PHONE", nullptr);
+  c.frames.push_back(fr(500, "", {sm(Ex::Happy, FaceO().look(1, -0.3)), wifiAt(88, 23, 3), t}));
+  c.frames.push_back(fr(300, "", {sm(Ex::Happy, FaceO().look(1, -0.3)), wifiAt(88, 23, 2), t}));
+  c.frames.push_back(fr(500, "", {sm(Ex::Happy, FaceO().look(1, -0.3)), wifiAt(88, 23, 3), t}));
+  c.frames.push_back(fr(90, "blink", {sm(Ex::Happy, FaceO().E(SHUT)), wifiAt(88, 23, 3), t}));
+}
+// Trying your home Wi-Fi: the logo fills up quickly, the dino concentrates.
+__attribute__((noinline)) void wifiConnecting(LiveClip& c) {
+  for (int level = 0; level < 4; level++)
+    c.frames.push_back(fr(220, "", {sm(Ex::Focus, FaceO().look(1, -0.3)), wifiAt(88, 23, level), lines3("CONNECTING", "", nullptr)}));
+}
+__attribute__((noinline)) void wifiPair(LiveClip& c, const View& v) {
+  if (v.a == 1) wifiJoined(c);
+  else if (v.a == 2) wifiConnecting(c);
+  else wifiWaiting(c, v);
+}
+// Connected: happy, then the time (or "getting the time" until the sync lands; the clip refreshes when it does).
+__attribute__((noinline)) void wifiDone(LiveClip& c, const View& v) {
+  c.frames.push_back(fr(1100, "", {sm(Ex::Happy, FaceO().heart()), wifiAt(88, 23, 3), lines3("CONNECTED", "", nullptr)}));
+  if (knownTime(v.text)) c.frames.push_back(fr(1800, "", {sm(Ex::Happy), timeBig(v.text, 25)}));
+  else c.frames.push_back(fr(1800, "", {sm(Ex::Idle, FaceO().look(1, -0.3)), lines3("GETTING THE", "TIME", nullptr)}));
+  c.frames.push_back(fr(400, "", {I()}));
+  c.loop = false;
+}
+__attribute__((noinline)) void wifiFail(LiveClip& c) {
+  c.frames.push_back(fr(1000, "", {sm(Ex::Sad), wifiAt(88, 23, 3, true), lines3("NO LUCK", "", nullptr)}));
+  c.frames.push_back(fr(1600, "", {sm(Ex::Sad), lines3("CHECK THE", "PASSWORD", nullptr)}));
+  c.loop = false;
+}
+
 }  // namespace
 
 void buildLive(const View& v, LiveClip& out) {
@@ -198,6 +278,9 @@ void buildLive(const View& v, LiveClip& out) {
     case UClip::Break: takeSheet(out, "break", "10:24"); break;
     case UClip::Stopwatch: stopwatch(out, v); break;
     case UClip::StopwatchTap: stopwatchTap(out, v); break;
+    case UClip::WifiPair: wifiPair(out, v); break;
+    case UClip::WifiDone: wifiDone(out, v); break;
+    case UClip::WifiFail: wifiFail(out); break;
     case UClip::Home: default:  // the home screen belongs to the life module (HomeScene::buildHome); a plain idle face as the fallback
       out.frames.push_back(fr(2400, "", {I()}));
       out.frames.push_back(fr(60, "", {I(FaceO().E(HALF))}));

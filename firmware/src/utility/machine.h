@@ -16,7 +16,7 @@ namespace utility {
 enum class Clip : uint8_t {
   Home,            // the dino idles; with clock mode on, time top-right (+ burn-in shift)
   TimeBoard,       // once: board with the time, then back
-  Menu,            // loop: the menu shows card `a` (0 clock, 1 alarm, 2 focus, 3 play, 4 back)
+  Menu,            // loop: the menu shows card `a` (0 clock, 1 alarm, 2 focus, 3 stopwatch, 4 wifi, 5 back)
   MenuSwap,        // once: card `a` slides away, card `b` pops up
   SetAlarm,        // loop: board HH:MM, field `a` (0 hours, 1 minutes) blinking
   SetAlarmTilt,    // once: value changed (ear flick + arrow)
@@ -32,7 +32,17 @@ enum class Clip : uint8_t {
   Break,           // loop: stretch along; text = minutes left
   Stopwatch,       // loop: text = MM:SS
   StopwatchTap,    // once: paw taps on the minute
+  WifiPair,        // loop: "connect your dino", dino looks for Wi-Fi; `a` = 0 waiting for a phone, 1 phone joined, 2 connecting;
+                   //       ssid / code = the setup network's name and password
+  WifiDone,        // once: connected (happy; text = the time if it is known)
+  WifiFail,        // once: did not connect (sad), then back to WifiPair
 };
+
+// What the Wi-Fi setup session (src/wifi/wifi_setup.*) tells the brain while "connect your dino" is open.
+enum class WifiEvent : uint8_t { PhoneJoined, PhoneLeft, Connecting, Connected, Failed, TimedOut };
+
+// What the brain asks the Wi-Fi module to do (read with takeWifiRequest()).
+enum class WifiRequest : uint8_t { None, Start, Cancel };
 
 enum class Sound : uint8_t {
   None, AlarmStage1, AlarmStage2, AlarmStage3, Snooze, Dismiss, AlarmSet, AlarmOff,
@@ -48,6 +58,8 @@ struct View {
   bool clockMode = false;   // Home: show the time
   uint8_t shift = 0;        // burn-in position 0..8 (3 min each) for long-running screens
   bool night = true;        // alarm screens: window shows night (18:00-06:00) or day
+  char ssid[12] = "";       // WifiPair: the setup network's name ("DINO-1234")
+  char code[12] = "";       // WifiPair: its password, 10 letters and digits
   uint32_t serial = 0;      // changes whenever the clip must restart from its first frame
 };
 
@@ -84,6 +96,10 @@ class Machine {
   void onEvent(input::Event e, uint32_t nowMs);
   void tick(const WallTime& t, uint32_t nowMs);  // call often (every loop is fine)
   void onClipDone(uint32_t nowMs);               // a one-shot clip finished playing
+  void onWifi(WifiEvent e, uint32_t nowMs);      // the Wi-Fi setup session says what is happening
+  void setWifiInfo(const char* ssid, const char* code);  // the setup network's name and password, to show
+  WifiRequest takeWifiRequest() { WifiRequest r = wifiReq_; wifiReq_ = WifiRequest::None; return r; }
+  static const int MENU_SLOTS = 6;               // clock, alarm, focus, stopwatch, wifi, back
   void setAlarm(const Alarm& a) { alarm_ = a; firedMinute_ = -1; snoozeUntilMs_ = 0; }  // e.g. a test or the app
 
   const View& view() const { return view_; }
@@ -96,7 +112,8 @@ class Machine {
 
  private:
   enum class State : uint8_t { Home, TimeBoard, Menu, MenuSwap, SetAlarm, SetAlarmDone, Ringing, Snooze, Dismiss,
-                               FocusPick, FocusStart, FocusWork, FocusDone, Break, Stopwatch };
+                               FocusPick, FocusStart, FocusWork, FocusDone, Break, Stopwatch,
+                               WifiSetup, WifiResult };
   void handle(input::Event e, uint32_t now);
   void clipDone(uint32_t now);
   void show(Clip c, int a = 0, int b = 0);
@@ -108,6 +125,7 @@ class Machine {
   void refreshTexts(uint32_t now);
   void timeText(char* out) const;
   void startAlarmEdit();
+  void startWifi();
 
   Settings set_;
   State state_ = State::Home;
@@ -133,6 +151,9 @@ class Machine {
   bool stopwatchRunning_ = false;
   uint32_t swStartMs_ = 0, swPausedMs_ = 0;
   int swLastMinute_ = 0;
+  // wifi setup
+  bool wifiPhone_ = false, wifiTimedOut_ = false;
+  WifiRequest wifiReq_ = WifiRequest::None;
   // outputs
   Sound sounds_[8];
   uint8_t sHead_ = 0, sLen_ = 0;

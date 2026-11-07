@@ -31,6 +31,7 @@ src/
   drivers/         MPU6050, Wi-Fi time
   sound/           dino sounds + tone player
   timekeeping/     sync schedule, formatting. Pure C++, desktop tests
+  wifi/            Wi-Fi setup ("connect your dino"): credential checks, form decoding, pairing session. Pure C++, desktop tests
   players/         stand-alone hardware checks, one env each (play_dino, play_inputs, imu_stream)
 ```
 
@@ -38,7 +39,7 @@ src/
 - No tuning numbers in code: put them in `config.h` (or, for the pure brain, in `utility::Settings`).
 - Comment every file's purpose at the top, and every non-obvious choice.
 
-After any change in `input/`, `utility/`, `life/` or `timekeeping/`, run `pio test -e native`. After any change in `face/` or `scenes/`, run `python3 tools/face_check.py` from the repo root; it must say all frames match.
+After any change in `input/`, `utility/`, `life/`, `timekeeping/` or `wifi/`, run `pio test -e native`. After any change in `face/` or `scenes/`, run `python3 tools/face_check.py` from the repo root; it must say all frames match.
 
 ## Hardware gotchas
 
