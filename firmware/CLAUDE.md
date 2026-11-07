@@ -32,7 +32,8 @@ src/
   sound/           dino sounds + tone player
   timekeeping/     sync schedule, formatting. Pure C++, desktop tests
   wifi/            Wi-Fi setup ("connect your dino"): credential checks, form decoding, pairing session. Pure C++, desktop tests
-  players/         stand-alone hardware checks, one env each (play_dino, play_inputs, imu_stream)
+  boot/            boot-up film (ADR 006): frame data, renderer, IntroPlayer clock. Pure C++, desktop tests; played by modules/screen, previewed by play_boot
+  players/         stand-alone hardware checks, one env each (play_dino, play_boot, play_inputs, imu_stream)
 ```
 
 - A new feature = a new `Module` in `src/modules/` + a `FEATURE_*` switch and its values in `config.h` + its lines in `main.cpp`. Modules never call each other; they go through the App.

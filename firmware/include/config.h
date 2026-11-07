@@ -18,6 +18,7 @@
 #define FEATURE_LIFE            1   // the dino's day on the home screen; off = the plain idle loop
 #define FEATURE_TOUCH           1   // HW-763 / TTP223 touch pad: tap, double tap, long press, hold
 #define FEATURE_BATTERY         1   // battery voltage through the divider on PIN_BATTERY_ADC
+#define FEATURE_BOOT_INTRO      1   // the boot film (ADR 006) on every power-on / reset; a tap skips it
 
 // =====================================================================================
 // 2. Pins (ESP32-C3 SuperMini)
@@ -39,6 +40,7 @@
 #define OLED_ADDR    0x3C
 #define OLED_RESET   -1
 #define SCREEN_DAY_CONTRAST    0xCF   // 0-255
+#define BOOT_INTRO_FILM        2      // which film plays: 0 born, 1 dino, 2 zoom (chosen 2026-11-07), see src/boot/
 #define SCREEN_NIGHT_CONTRAST  0x01   // while the dino sleeps (the SSD1306 dims only a little: off is the real saving)
 
 // =====================================================================================

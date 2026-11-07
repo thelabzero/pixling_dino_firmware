@@ -54,6 +54,8 @@ void App::emit(input::Event e) {
 #endif
   for (int i = 0; i < n_; i++)
     if (on_[i]) mods_[i]->onInput(*this, e);
+  for (int i = 0; i < n_; i++)
+    if (on_[i] && mods_[i]->swallowsInput()) return;  // e.g. the boot film is playing
   machine_.onEvent(e, now_);
 }
 

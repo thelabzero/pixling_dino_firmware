@@ -9,6 +9,7 @@
 #include "../app/module.h"
 #include "../face/face.h"
 #include "../scenes/dino_live.h"
+#include "../boot/intro_player.h"
 
 class Screen : public Module {
  public:
@@ -17,6 +18,10 @@ class Screen : public Module {
   bool begin(App& app) override;
   void loop(App& app, uint32_t now) override;
   void printInfo(Print& out) const override;
+  void onInput(App& app, input::Event e) override;   // a touch skips the boot film
+  bool swallowsInput() const override { return intro_.active(); }
+  bool onKey(App& app, char c) override;             // B = replay the boot film
+  const char* keyHelp() const override { return "B = replay the boot film"; }
 
  private:
   Adafruit_SSD1306 display_;
@@ -32,6 +37,9 @@ class Screen : public Module {
   face::Grid bufA_, bufB_;     // 8 KB each: the Screen must not live on the stack
   face::Grid *shown_ = &bufA_, *prep_ = &bufB_;
   uint32_t lastRenderUs_ = 0, worstRenderUs_ = 0;
+  boot::IntroPlayer intro_;    // the boot film (FEATURE_BOOT_INTRO): while active it owns the screen
+  void startIntro(uint32_t now);
+  void drawIntro();
   void update(App& app, uint32_t now);
   void advance(App& app, uint32_t now);
   void build(App& app, const utility::View& v);

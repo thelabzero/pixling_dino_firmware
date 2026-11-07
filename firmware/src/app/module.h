@@ -32,6 +32,10 @@ class Module {
   // An input happened (touch, IMU, key). Called before the brain handles it.
   virtual void onInput(App&, input::Event) {}
 
+  // True while this module owns the screen and input must not reach the brain (the boot film: a tap skips it,
+  // it must not also pet the dino). Checked after every module's onInput().
+  virtual bool swallowsInput() const { return false; }
+
   // The brain asked for a sound (alarm stage, menu move...).
   virtual void onSound(App&, utility::Sound) {}
 
