@@ -3,7 +3,8 @@
 //
 // Step = {start Hz, end Hz, ms, volume 0-100}. Start Hz 0 = rest.
 // All sounds at volume 100 (a piezo on 3.3 V is quiet at best). Pitches sit in 1-4 kHz: a small
-// piezo is loudest around 2-4 kHz and nearly silent below ~1 kHz (found on hardware).
+// piezo is loudest around 2-4 kHz and nearly silent below ~1 kHz (found on hardware). Sweep on the
+// owner's piezo, 2026-11-07: loudest at 4500 Hz (by ear); most steps below still sit at 1.3-2.4 kHz.
 // "Growl" = a run of short steps with rests: the pulsing is what reads as gravel on a piezo.
 // These are first drafts: listen (tools/sound_preview, or the "p" key) and edit the numbers.
 #include "dino_sounds.h"

@@ -1,7 +1,7 @@
 // Life: the dino's day on the home screen (life/life.* decides, scenes/dino_clips.* draws, the Screen
 // module plays). Reacts to touch, shake, pick-up and tilt, quirks (rawr) now and then, falls asleep after
 // 5 min without input. Triggers voices through App::emitVoice. All numbers in config.h, section 7b.
-// Keys: n = rawr now, v = play each life clip in turn, s = fall asleep now (test).
+// Keys: n = rawr now, v = play each life clip in turn, z = fall asleep now (test; "s" belongs to the Wi-Fi sync).
 #pragma once
 #include "../app/module.h"
 #include "../life/life.h"
@@ -14,7 +14,7 @@ class Life : public Module, public HomeScene {
   void onInput(App& app, input::Event e) override;
   void onSound(App& app, utility::Sound s) override;
   bool onKey(App& app, char c) override;
-  const char* keyHelp() const override { return "n = rawr now, v = each life clip in turn, s = fall asleep now (test)"; }
+  const char* keyHelp() const override { return "n = rawr now, v = each life clip in turn, z = fall asleep now (test)"; }
   void printInfo(Print& out) const override;
 
   // HomeScene
