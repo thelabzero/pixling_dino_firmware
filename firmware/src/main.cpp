@@ -45,6 +45,9 @@ SET_LOOP_TASK_STACK_SIZE(16 * 1024);
 #if FEATURE_BATTERY
 #include "modules/battery.h"
 #endif
+#if FEATURE_SOAK_LOG
+#include "modules/soak_log.h"
+#endif
 
 // config.h (section 7) -> the brain's settings.
 static utility::Settings settingsFromConfig() {
@@ -92,6 +95,9 @@ static Life life_;
 #if FEATURE_SOUND_LOG
 static SoundLog soundLog;
 #endif
+#if FEATURE_SOAK_LOG
+static SoakLog soakLog_;        // after the modules it reads from
+#endif
 static Screen screen;           // last: draws what the others set up
 
 void setup() {
@@ -125,6 +131,9 @@ void setup() {
 #endif
 #if FEATURE_SOUND_LOG
   app.add(soundLog);
+#endif
+#if FEATURE_SOAK_LOG
+  app.add(soakLog_);
 #endif
   app.add(screen);
 

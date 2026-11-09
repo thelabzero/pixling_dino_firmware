@@ -19,6 +19,7 @@
 #define FEATURE_TOUCH           1   // HW-763 / TTP223 touch pad: tap, double tap, long press, hold
 #define FEATURE_BATTERY         1   // battery voltage through the divider on PIN_BATTERY_ADC
 #define FEATURE_BOOT_INTRO      1   // the boot film (ADR 006) on every power-on / reset; a tap skips it
+#define FEATURE_SOAK_LOG        1   // black box (ADR 007): health samples + events kept in flash, dumped with the w key
 
 // =====================================================================================
 // 2. Pins (ESP32-C3 SuperMini)
@@ -104,6 +105,20 @@
 #define BATTERY_LOG_S        60      // print the battery this often (0 = only on "b" / "i")
 #define BATTERY_MISSING_MV   2500    // below this: no battery connected
 #define BATTERY_MAX_MV       4350    // above this it is not a Li-ion cell: USB / charger voltage on the divider
+
+// =====================================================================================
+// 5e. Soak log (ADR 007). One 48-byte record per sample; 12000 records = 576 KB, about 8 days at one a minute.
+// =====================================================================================
+#define SOAK_SAMPLE_S        60      // one health sample per minute
+#define SOAK_SAMPLE_FAST_S   15      // ... every 15 s once the battery is critical (the end of the run is the interesting part)
+#define SOAK_FLUSH_S         600     // RAM -> flash every 10 min while healthy (events and low battery flush at once)
+#define SOAK_LOW_MV          3500    // battery_low event, and every record is flushed from here on
+#define SOAK_CRITICAL_MV     3300    // battery_critical event, faster samples
+#define SOAK_RECOVER_MV      150     // a rise this far above the lowest reading = charging (battery_recovered event)
+#define SOAK_BUFFER_RECORDS  16      // RAM buffer: 16 x 48 B
+#define SOAK_STALL_MS        300     // a loop longer than this is logged as loop_stall (alarm exactness)
+#define SOAK_MAX_RECORDS     12000   // the file stops growing here (log_full event)
+#define SOAK_AUTO_DUMP       1       // print the whole log when a Serial monitor first connects after a boot
 
 // =====================================================================================
 // 5d. Buzzer. The sounds themselves are tables in src/sound/dino_sounds.cpp.

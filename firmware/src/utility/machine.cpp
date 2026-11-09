@@ -69,12 +69,14 @@ void Machine::goHome(uint32_t now) {
   refreshTexts(now);
 }
 
-const char* Machine::stateName() const {
+const char* Machine::stateNameOf(uint8_t code) {
   static const char* const N[] = {"home", "time_board", "menu", "menu_swap", "set_alarm", "set_alarm_done", "ringing",
                                   "snooze", "dismiss", "focus_pick", "focus_start", "focus_work", "focus_done",
                                   "break", "stopwatch", "wifi_setup", "wifi_result"};
-  return N[(int)state_];
+  return code < sizeof(N) / sizeof(N[0]) ? N[code] : "?";
 }
+
+const char* Machine::stateName() const { return stateNameOf((uint8_t)state_); }
 
 void Machine::startRinging(uint32_t now) {
   if (state_ == State::WifiSetup || state_ == State::WifiResult) wifiReq_ = WifiRequest::Cancel;  // the alarm wins: close the setup network

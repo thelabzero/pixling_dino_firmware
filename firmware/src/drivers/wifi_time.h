@@ -20,6 +20,10 @@ class WifiTime {
   bool localTime(int& hour, int& minute, int& second) const;
   void printInfo(Print& out) const;
   State state() const { return state_; }
+  uint32_t syncsOk() const { return syncs_; }       // for the soak log
+  uint32_t syncsFailed() const { return fails_; }
+  bool driftKnown() const { return driftKnown_; }
+  int32_t lastDriftS() const { return lastDriftS_; }
 
  private:
   void finish(bool ok, const char* why);

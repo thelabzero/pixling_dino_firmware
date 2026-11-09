@@ -20,6 +20,7 @@ class WifiClock : public Module, public TimeSource {
   const char* keyHelp() const override { return "s = sync the time now"; }
   void printInfo(Print& out) const override;
   utility::WallTime wallTime() const override;
+  void soakFill(soak::Record& r) const override;
 
  private:
   void startSetup(App& app, uint32_t now);

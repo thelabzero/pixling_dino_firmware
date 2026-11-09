@@ -102,3 +102,13 @@ utility::WallTime WifiClock::wallTime() const {
   w.second = lt.tm_sec;
   return w;
 }
+
+void WifiClock::soakFill(soak::Record& r) const {
+  const uint32_t ok = clock_.syncsOk(), bad = clock_.syncsFailed();
+  r.syncOk = (uint8_t)(ok > 255 ? 255 : ok);
+  r.syncFail = (uint8_t)(bad > 255 ? 255 : bad);
+  if (clock_.driftKnown()) {
+    const int32_t d = clock_.lastDriftS();
+    r.driftS = (int16_t)(d > 32767 ? 32767 : d < -32768 ? -32768 : d);
+  }
+}

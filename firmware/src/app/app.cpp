@@ -21,6 +21,11 @@ void App::begin() {
 
 void App::loop() {
   const uint32_t now = now_ = millis();
+  if (lastLoopStartMs_) {  // how long the previous loop (and its delay) took: a stall detector for the soak log
+    lastGapMs_ = now - lastLoopStartMs_;
+    if (lastGapMs_ > loopWorstMs_) loopWorstMs_ = lastGapMs_;
+  }
+  lastLoopStartMs_ = now;
 
   // 1. Modules: inputs are read here and arrive through emit(); outputs draw here.
   for (int i = 0; i < n_; i++)
@@ -102,4 +107,18 @@ void App::printInfo(Print& out) const {
     if (!on_[i]) { out.printf("[%s] not found\n", mods_[i]->name()); continue; }
     mods_[i]->printInfo(out);
   }
+}
+
+uint32_t App::takeLoopWorstMs() {
+  const uint32_t w = loopWorstMs_;
+  loopWorstMs_ = 0;
+  return w;
+}
+
+void App::soakFill(soak::Record& r) const {
+  r.state = machine_.stateCode();
+  const utility::WallTime w = wallTime();
+  if (w.valid) r.flags |= soak::FL_TIME_VALID;
+  for (int i = 0; i < n_; i++)
+    if (on_[i]) mods_[i]->soakFill(r);
 }

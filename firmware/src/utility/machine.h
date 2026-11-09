@@ -109,6 +109,8 @@ class Machine {
   Sound nextSound();
   bool takeSaveRequest() { bool r = save_; save_ = false; return r; }
   const char* stateName() const;
+  uint8_t stateCode() const { return (uint8_t)state_; }  // for the soak log
+  static const char* stateNameOf(uint8_t code);
 
  private:
   enum class State : uint8_t { Home, TimeBoard, Menu, MenuSwap, SetAlarm, SetAlarmDone, Ringing, Snooze, Dismiss,

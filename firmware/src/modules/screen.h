@@ -18,6 +18,7 @@ class Screen : public Module {
   bool begin(App& app) override;
   void loop(App& app, uint32_t now) override;
   void printInfo(Print& out) const override;
+  void soakFill(soak::Record& r) const override { r.renderWorstMs = (uint16_t)(worstRenderUs_ / 1000); }
   void onInput(App& app, input::Event e) override;   // a touch skips the boot film
   bool swallowsInput() const override { return intro_.active(); }
   bool onKey(App& app, char c) override;             // B = replay the boot film

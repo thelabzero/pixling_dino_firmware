@@ -10,6 +10,7 @@
 #include <Arduino.h>
 #include "../input/events.h"
 #include "../scenes/dino_live.h"
+#include "../soak/soak_record.h"
 #include "../sound/dino_sounds.h"
 #include "../utility/machine.h"
 
@@ -54,6 +55,9 @@ class Module {
 
   // Status for the "i" key.
   virtual void printInfo(Print&) const {}
+
+  // The soak log is about to take a sample: fill in the fields this module knows (battery mV, render time...).
+  virtual void soakFill(soak::Record&) const {}
 };
 
 // A module that knows the time implements this and registers with app.setTimeSource().
