@@ -13,6 +13,7 @@ class Battery : public Module {
   bool onKey(App& app, char c) override;
   const char* keyHelp() const override { return "b = battery now"; }
   void printInfo(Print& out) const override;
+  void soakFill(soak::Record& r) const override;
 
   uint32_t millivolts() const { return (uint32_t)avg_.value(); }
   int percent() const { return power::lipoPercent(millivolts()); }

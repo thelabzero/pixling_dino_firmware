@@ -36,6 +36,9 @@ Web Bluetooth does not exist in iPhone Safari, the page would need to be hosted 
 Like the stopwatch icon, the Wi-Fi card icon and the clips WifiPair / WifiDone / WifiFail are drawn in code (`scenes/dino_live.cpp`) in the sheet's style (small face at x24 y31, text beside it, 1 px lines). They are not in `art/reference/dino-v1/`, so `face_check.py` does not cover them; `tools/live_native.cpp` renders every one. Add them to the sheet when it is next revised.
 Sounds reuse existing ones: connected = `alarm_set` (happy warble), failed = `snooze` (grumpy "hmph"). A dedicated pair can replace them.
 
+## Setup page look (2026-11-08)
+The page uses the Pixling brand language, like the boot film (ADR 006): the pixel "Pixling" wordmark with its teal hopping dot, the pixel Dino beside the title (its face changes: open while waiting, happy on "Connected", unimpressed on a failure), Night `#282020` / cream `#FCF8F0` / teal `#2F9083`, 4 px strokes, stepped corners (clip-path), no curves, light and dark by the phone's setting, reduced motion respected. The art is generated from the same bitmaps as the boot film (`tools/gen_portal_art.py`), so the logo cannot drift. Still no outside resources: fonts fall back to the phone's own (the sheet's Atkinson Hyperlegible is used only if the phone has it; embedding it would cost about 25 KB of flash per weight, not done). Facts: the page JavaScript and element ids are unchanged; it was re-run in headless Chrome against the route mock (success, wrong password, rejected input, hostile network name): same results as before; 8.2 KB.
+
 ## Not done (next)
 - Time board with no time: could say "CONNECT YOUR DINO / MENU > WI-FI" when nothing is saved (needs the brain to know whether credentials exist).
 - Forget the saved network (menu item or key), set timezone on the same page.

@@ -7,7 +7,7 @@ No camera, no microphone, no cloud. The only network use is a daily Wi-Fi time s
 - **How to use it (for owners):** [**open the live guide**](https://thelabzero.github.io/pixling-dino-guide/) (animated, with the dino's real screens).
 - **How to build and flash it (this file).**
 - **Status and known gaps:** [`docs/checkpoints.md`](docs/checkpoints.md). Project rules for contributors: [`CLAUDE.md`](CLAUDE.md).
-- **Firmware 0.3.0.** Face, life, clock, alarm, focus and stopwatch have run on the board ([`docs/d4-board-checklist.md`](docs/d4-board-checklist.md)). **Wi-Fi setup ("connect your dino") is code-complete and tested on the desktop but not yet run on the board** ([`docs/wifi-setup-checklist.md`](docs/wifi-setup-checklist.md), design: [ADR 005](docs/decisions/005-wifi-setup-portal.md)).
+- **Firmware 0.3.1.** Power-on plays the Pixling **boot film** (section 7). A **soak log** (the dino's black box in flash, section 9) records a long battery run. Face, life, clock, alarm, focus and stopwatch have run on the board ([`docs/d4-board-checklist.md`](docs/d4-board-checklist.md)). **Wi-Fi setup ("connect your dino") is code-complete and tested on the desktop but not yet run on the board** ([`docs/wifi-setup-checklist.md`](docs/wifi-setup-checklist.md), design: [ADR 005](docs/decisions/005-wifi-setup-portal.md)).
 
 Design source: `art/reference/dino-v1/` (50 clips, 416 frames; v1 ports the Face, Life and Utility groups, 32 clips / 251 frames).
 
@@ -121,13 +121,28 @@ The monitor runs at 115200 baud. Add `-f time` to put a time stamp on every line
 | You should see / hear | If not |
 |---|---|
 | The monitor lists each module and whether it was found | A missing module is reported and skipped; the dino keeps running without it |
-| The dino's face on the OLED | Check SDA 8 / SCL 9 and address 0x3C |
+| The boot film (about 5 s, see below), then the dino's face on the OLED | Check SDA 8 / SCL 9 and address 0x3C |
 | A tap on the touch pad gets a reaction | Check GPIO 4 and that the module outputs HIGH when touched (`TOUCH_ACTIVE_HIGH`) |
 | Tilting the dino moves the menu | Check the IMU wiring; see the calibration step below |
 | Short sounds on touch, menu and alarm | Check GPIO 10 and `BUZZER_VOLUME` |
 | Long press shows a Wi-Fi card between Stopwatch and Back | Rebuild and upload the current firmware (the menu has 6 cards) |
 | Menu, Wi-Fi: the dino says "CONNECT YOUR DINO", then a network name and password | Look at the monitor for `[wifi] setup network ... is up`; see troubleshooting |
 | The clock shows the right time (long press, Clock, tap) | Not connected yet (section 4), a 5 GHz network, or `TIME_TZ` |
+
+### The boot screen
+
+Every power-on and reset plays a short **boot film** before the dino's face appears (film "C zoom", about **4.9 s**, [ADR 006](docs/decisions/006-boot-intro-film.md)):
+
+1. The name **Pixling** writes itself in pixels and the dot of the *i* hops.
+2. The picture zooms into the dot (2x, 4x, 8x). The dot turns into **Dino**.
+3. It zooms into Dino's face, the face grows into the live face and blinks once, and the home screen takes over.
+
+- **A tap skips it** (any touch). The skipping tap is swallowed, so it does not also pet the dino.
+- **Replay:** type `B` (capital) in the Serial monitor.
+- **Switch it off or pick another film** in `firmware/include/config.h`: `FEATURE_BOOT_INTRO` (1 = on) and `BOOT_INTRO_FILM` (0 = born, 1 = dino, 2 = zoom). The monitor prints `[screen] boot film: ...` when it starts and `[screen] boot film done` when it ends.
+- **Preview all three films** without the full firmware: `pio run -e play_boot -t upload && pio device monitor -e play_boot` (keys `1` `2` `3` pick a film, `a` plays all, `l` loops, `s` prints timing).
+- The film is frame data in `firmware/src/boot/`; its last frames are drawn by the same face rig as the live face, so the hand-over is exact. Checks: [`docs/boot-film-checklist.md`](docs/boot-film-checklist.md).
+- It never delays an alarm: right after power-on the clock is not synced yet, so no alarm can be due while the film plays (ADR 006).
 
 **No touch pad connected yet?** Everything can be driven from the Serial monitor: type `t` (tap), `d` (double tap), `l` (long press), `h` (hold), `,` and `.` (tilt left/right), `f` and `u` (flip down/up). Type `?` for the full key list and `i` for a status report.
 
@@ -151,7 +166,20 @@ Small stand-alone programs, one environment each:
 |---|---|---|
 | `play_dino` | Plays every dino clip in a loop and prints render time per clip | `pio run -e play_dino -t upload && pio device monitor -e play_dino` |
 | `play_inputs` | I2C scan and live gesture counters on the screen | `pio run -e play_inputs -t upload && pio device monitor -e play_inputs` |
+| `play_boot` | Previews the three boot films (A born, B dino, C zoom) with timing | `pio run -e play_boot -t upload && pio device monitor -e play_boot` |
+| `play_shard` | The 12 expressions of the shard-face sheet (experiment) | `pio run -e play_shard -t upload && pio device monitor -e play_shard` |
 | `imu_calibrator` | Streams IMU data for the calibrator page | see section 8 |
+
+### Long runs: the soak log
+
+For a battery test or a long soak, the dino keeps its own log in flash (`FEATURE_SOAK_LOG`, [ADR 007](docs/decisions/007-soak-log.md)): one health sample a minute (battery mV, free heap, stack, longest loop gap, render time, Wi-Fi syncs) plus events (every boot with its reset reason, low battery, loop stalls, alarms). It survives a reset, a dead battery and unplugging USB. Monitor keys: `w` prints the whole log (it also prints by itself when a monitor first connects after a boot), `x` twice erases it.
+
+```bash
+firmware/.venv/bin/python tools/soak_dump.py             # fetch the log over USB into soak_logs/
+python3 tools/soak_report.py soak_logs/<the saved file>  # runs, resets, battery curve, memory trend, stalls
+```
+
+The full run procedure is [`docs/soak-checklist.md`](docs/soak-checklist.md). Battery voltage is uncalibrated until `BATTERY_CAL` is set with a multimeter.
 
 ## 10. Tuning
 
@@ -162,7 +190,7 @@ Everything tunable is in `firmware/include/config.h`: feature switches, pins, di
 Run from the repo root:
 
 ```bash
-cd firmware && .venv/bin/pio test -e native && cd ..   # 95 desktop unit tests (incl. the Wi-Fi setup logic)
+cd firmware && .venv/bin/pio test -e native && cd ..   # 120 desktop unit tests (incl. Wi-Fi setup, boot film, soak log)
 python3 tools/face_check.py                            # every frame matches the design, double and float
 node tools/imu_calibrator/test_page.js                 # calibrator page test
 cd firmware && .venv/bin/pio run -e dino_c3            # chip build
@@ -183,6 +211,7 @@ Code layout and rules: [`firmware/README.md`](firmware/README.md) and [`firmware
 | The dino says "NO LUCK / CHECK THE PASSWORD" | Wrong Wi-Fi password, the network is 5 GHz only, or it is out of range. The monitor says `could not join that network` (it never prints the password). Try again |
 | The page never says "Connected", but the dino shows CONNECTED | Expected: the phone can lose the dino's network at that moment. Trust the dino's screen |
 | Wrong time by hours | `TIME_TZ` in `config.h` |
+| The boot film plays on every reset | Intended (ADR 006). Tap to skip, or `FEATURE_BOOT_INTRO 0` in `config.h`. A film that repeats by itself means the board is resetting: look at the reset reason in the first monitor lines (`[soak] log: ... reset reason ...`) |
 | Tilt is reversed or erratic | Re-run the IMU calibration with the IMU fixed in place |
 | Reset loop in the monitor | Report the log. The known stack-overflow cause is fixed (loop stack is 16 KB, one clip is built at a time); keep a `Grid` (8 KB) off the stack in any new code |
 | Dino reacts to nothing | Touch events: check wiring and `TOUCH_*` timings; or use the Serial keys in section 7 |

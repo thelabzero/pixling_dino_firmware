@@ -14,6 +14,7 @@ class ImuInput : public Module {
   bool begin(App& app) override;
   void loop(App& app, uint32_t now) override;
   void printInfo(Print& out) const override;
+  void soakFill(soak::Record& r) const override { r.imuErrors = (uint16_t)(readErrors_ > 65535 ? 65535 : readErrors_); }
 
  private:
   Mpu6050 imu_;

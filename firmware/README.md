@@ -18,7 +18,8 @@ Add `-f time` to the monitor to put a time stamp on every line. On start-up the 
 
 | Do | What happens |
 |---|---|
-| Long press | Menu: Clock, Alarm, Focus, Stopwatch, Back. Tilt to move, tap to choose |
+| Power on / reset | The Pixling boot film (about 5 s), then the home face. A tap skips it. `B` in the monitor replays it |
+| Long press | Menu: Clock, Alarm, Focus, Stopwatch, Wi-Fi, Back. Tilt to move, tap to choose |
 | Double tap | Time board |
 | Menu → Alarm | Set alarm: starts at the current time. Tilt = ±1 h, tap, tilt = ±5 min, tap = save. Hold = alarm off |
 | Alarm ringing | Tap = snooze 5 min. Hold or flip face-down = dismiss. Stops by itself after 10 min |
@@ -27,6 +28,8 @@ Add `-f time` to the monitor to put a time stamp on every line. On start-up the 
 | Menu → Wi-Fi | "Connect your dino": join the `DINO-xxxx` network on your phone with the password on the screen, pick your Wi-Fi on the page that opens. Long press = cancel. Gives up after 5 min |
 
 On the home screen dino lives its day (times and weights in `config.h` and `src/life/`): it wakes up, idles with small quirks, naps, gets drowsy in the evening and sleeps at night with the screen dimmed. Taps, shakes, pick-ups and tilts get a reaction.
+
+The boot film is switched by `FEATURE_BOOT_INTRO` and `BOOT_INTRO_FILM` in `config.h`. The soak log (flash black box for long runs, keys `w` dump and `x x` erase) is `FEATURE_SOAK_LOG`.
 
 Touch can also be typed in the Serial monitor. Press `?` to list every key (tap, double tap, long press, hold, tilt, flip, test alarm, info, buzzer audition...). The touch pad (GPIO4) works alongside these keys.
 
@@ -43,14 +46,16 @@ src/
   main.cpp            wiring only: config -> settings, create the switched-on modules, start the App
   app/                the loop (modules -> brain -> sounds / alarm changes -> modules) + Module interface
   modules/            one file pair per feature: screen, life, imu_input, touch_input, battery,
-                      buzzer, wifi_clock, alarm_store, serial_console, sound_log
+                      buzzer, wifi_clock, alarm_store, serial_console, sound_log, soak_log
   utility/            the brain: menu, alarm, focus, stopwatch. Pure C++, desktop-tested
   life/               dino's day: phases, behaviour choice, reactions. Pure C++, desktop-tested
   face/ scenes/       the face rig and every screen as frame data. Pure C++, checked by tools/face_check.py
   input/              events, touch + IMU gestures, IMU calibration. Pure C++, desktop-tested
   power/              battery voltage -> charge. Pure C++, desktop-tested
   sound/              dino sounds as tables + the tone player. Pure C++, desktop-tested
-  drivers/            MPU6050, Wi-Fi time sync
+  boot/               the boot-up film (ADR 006): frame data, renderer, IntroPlayer clock. Pure C++, desktop-tested; played by modules/screen
+  soak/               soak-log record format and decisions (ADR 007). Pure C++, desktop-tested
+  drivers/            MPU6050, Wi-Fi time sync, Wi-Fi setup portal
   timekeeping/        sync schedule, time formatting. Pure C++, desktop-tested
   wifi/               Wi-Fi setup rules: credential checks, form decoding, the pairing session. Pure C++, desktop-tested
   players/            stand-alone hardware checks (one env each)
@@ -82,7 +87,7 @@ On the device, `p` plays them one by one. Overall loudness: `BUZZER_VOLUME` in `
 
 | After changing | Run | Expect |
 |---|---|---|
-| `utility/`, `life/`, `input/`, `sound/`, `timekeeping/`, `wifi/` | `pio test -e native` | all tests pass |
+| `utility/`, `life/`, `input/`, `sound/`, `timekeeping/`, `wifi/`, `boot/`, `soak/` | `pio test -e native` | all tests pass (120) |
 | `face/`, `scenes/` | `python3 tools/face_check.py` (repo root) | all frames match (double and float) |
 | anything | `pio run -e dino_c3` | builds with no warnings |
 
@@ -91,6 +96,7 @@ Hardware checks, one small program each (flash and watch the monitor by hand):
 | Env | Checks |
 |---|---|
 | `play_dino` | every dino clip in a loop, with render times |
+| `play_boot` | the three boot film candidates, with timing (keys 1 2 3, a, l, s) |
 | `play_inputs` | I2C scan, IMU gestures with on-screen counters |
 | `imu_calibrator` | streams the IMU for `tools/imu_calibrator` |
 

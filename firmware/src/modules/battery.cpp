@@ -52,3 +52,10 @@ void Battery::printInfo(Print& out) const {
   out.printf("[battery] %.2f V (pin %lu mV), about %d %% (estimate)\n", mv / 1000.0, (unsigned long)lastPinMv_,
              percent());
 }
+
+void Battery::soakFill(soak::Record& r) const {
+  const uint32_t mv = millivolts();
+  r.battMv = (uint16_t)(mv > 65535 ? 65535 : mv);
+  if (mv < BATTERY_MISSING_MV) r.flags |= soak::FL_NO_BATTERY;
+  if (mv > BATTERY_MAX_MV) r.flags |= soak::FL_USB_VOLTAGE;
+}

@@ -10,7 +10,7 @@
 #include "../input/events.h"
 #include "../utility/machine.h"
 
-#define FIRMWARE_VERSION "0.3.0"  // 0.3 = utility (clock, alarm, focus, stopwatch) on the parts rig
+#define FIRMWARE_VERSION "0.3.1"  // 0.3 = utility (clock, alarm, focus, stopwatch) on the parts rig; 0.3.1 = soak log
 
 class App {
  public:
@@ -35,6 +35,11 @@ class App {
   void printKeyHelp(Print& out) const;
   void printInfo(Print& out) const;
 
+  // ---- for the soak log
+  void soakFill(soak::Record& r) const;           // every module adds what it knows; the App adds state and the clock
+  uint32_t takeLoopWorstMs();                     // longest gap between two loops since the last call; resets it
+  uint32_t lastLoopGapMs() const { return lastGapMs_; }
+
  private:
   static const int MAX_MODULES = 16;
   Module* mods_[MAX_MODULES] = {};
@@ -44,6 +49,7 @@ class App {
   const TimeSource* time_ = nullptr;
   HomeScene* home_ = nullptr;
   const char* lastState_ = nullptr;
+  uint32_t lastLoopStartMs_ = 0, lastGapMs_ = 0, loopWorstMs_ = 0;
   uint32_t now_ = 0;  // time of the current loop: every event in one loop gets the same time
   void alarmChanged(const utility::Alarm& a);
 };

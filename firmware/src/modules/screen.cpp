@@ -3,17 +3,78 @@
 #include <string.h>
 #include "config.h"
 #include "../app/app.h"
+#include "../boot/boot_film.h"
+
+// The live face for the last frames of the boot film: the real rig, idle, with its blink (half / closed lids).
+// `px` is the Screen's own work Grid (a Grid is just its pixel array), so the rig draws straight into it.
+static void liveFaceHook(uint8_t* px, int variant) {
+  using namespace face;
+  static_assert(sizeof(Grid) == boot::PIXELS, "Grid must be exactly the film's pixel buffer");
+  static FaceO over;  // static: a FaceO on the stack is big (see face.h)
+  over = FaceO();
+  if (variant == 1) over.E(EyeO().lt(0.25).lb(0.25));
+  else if (variant == 2) over.E(EyeO().lt(0.5).lb(0.5));
+  Grid& g = *reinterpret_cast<Grid*>(px);
+  g.clear();
+  faceDraw(g, resolve(Ex::Idle, over));
+}
 
 Screen::Screen() : display_(SCREEN_W, SCREEN_H, &Wire, OLED_RESET) {}
 
 bool Screen::begin(App& app) {
   if (!display_.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) return false;
   Serial.printf("[screen] SSD1306 at 0x%02X\n", OLED_ADDR);
+#if FEATURE_BOOT_INTRO
+  startIntro(millis());
+#else
   update(app, millis());
+#endif
   return true;
 }
 
+// ---- boot film: while it plays it owns the screen; the brain and the other modules keep running underneath.
+// (Alarms cannot be late because of it: the clock is not synced in the first seconds after power-on, see ADR 006.)
+void Screen::startIntro(uint32_t now) {
+  intro_.begin(boot::film(BOOT_INTRO_FILM), now);
+  Serial.printf("[screen] boot film: %s\n", boot::film(BOOT_INTRO_FILM).name);
+  drawIntro();
+  intro_.update(now);  // step 0 is drawn: clear the "changed" flag
+}
+
+void Screen::drawIntro() {
+  // work = bufB_, result = bufA_ (both are plain 128x64 byte grids)
+  boot::renderStep(intro_.current(), bufB_.d, bufA_.d, liveFaceHook);
+  present(bufA_);
+}
+
+void Screen::onInput(App&, input::Event e) {
+  if (!intro_.active()) return;
+  if (e == input::Event::Tap || e == input::Event::DoubleTap || e == input::Event::LongPress || e == input::Event::Hold) {
+    intro_.skip(millis());
+    Serial.println("[screen] boot film skipped");
+  }
+}
+
+bool Screen::onKey(App&, char c) {
+  if (c != 'B') return false;
+#if FEATURE_BOOT_INTRO
+  startIntro(millis());
+  return true;
+#else
+  return false;
+#endif
+}
+
 void Screen::loop(App& app, uint32_t now) {
+  if (intro_.active()) {
+    if (intro_.update(now)) drawIntro();
+    if (!intro_.active()) {  // the film is over: hand the screen to the normal clips (force a restart of the current view)
+      playing_.serial = app.machine().view().serial + 1;
+      Serial.println("[screen] boot film done");
+      update(app, now);
+    }
+    return;
+  }
   update(app, now);
   advance(app, now);
 }

@@ -10,6 +10,7 @@
 #include <Arduino.h>
 #include "../input/events.h"
 #include "../scenes/dino_live.h"
+#include "../soak/soak_record.h"
 #include "../sound/dino_sounds.h"
 #include "../utility/machine.h"
 
@@ -32,6 +33,10 @@ class Module {
   // An input happened (touch, IMU, key). Called before the brain handles it.
   virtual void onInput(App&, input::Event) {}
 
+  // True while this module owns the screen and input must not reach the brain (the boot film: a tap skips it,
+  // it must not also pet the dino). Checked after every module's onInput().
+  virtual bool swallowsInput() const { return false; }
+
   // The brain asked for a sound (alarm stage, menu move...).
   virtual void onSound(App&, utility::Sound) {}
 
@@ -50,6 +55,9 @@ class Module {
 
   // Status for the "i" key.
   virtual void printInfo(Print&) const {}
+
+  // The soak log is about to take a sample: fill in the fields this module knows (battery mV, render time...).
+  virtual void soakFill(soak::Record&) const {}
 };
 
 // A module that knows the time implements this and registers with app.setTimeSource().
