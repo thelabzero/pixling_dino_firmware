@@ -9,7 +9,7 @@ void App::add(Module& m) {
 }
 
 void App::begin() {
-  Serial.printf("\nDino firmware %s\n", FIRMWARE_VERSION);
+  Serial.printf("\n%s firmware %s\n", FIRMWARE_NAME, FIRMWARE_VERSION);
   now_ = millis();
   machine_.begin(utility::Alarm(), now_);  // the alarm store (if on) restores the saved alarm next
   for (int i = 0; i < n_; i++) {
@@ -39,6 +39,7 @@ void App::loop() {
     for (int i = 0; i < n_; i++)
       if (on_[i]) mods_[i]->onSound(*this, s);
   if (machine_.takeSaveRequest()) alarmChanged(machine_.alarm());
+  if (machine_.takeFaceSaveRequest()) faceChanged(machine_.defaultFace());
 
 #if LOG_STATE
   const char* st = machine_.stateName();  // names are fixed strings, so comparing pointers is enough
@@ -76,6 +77,19 @@ void App::setAlarm(const utility::Alarm& a) {
 
 void App::restoreAlarm(const utility::Alarm& a) { machine_.setAlarm(a); }
 
+void App::restoreFace(int index) {
+  machine_.restoreFace(index);
+  scenes::applyDefaultFace(machine_.defaultFace());
+}
+
+// The user confirmed a new default face: the rig draws it from now on, then the storage module keeps it.
+void App::faceChanged(int index) {
+  scenes::applyDefaultFace(index);
+  Serial.printf("[face] default face: %s (%d)\n", scenes::faceChoice(index).name, index);
+  for (int i = 0; i < n_; i++)
+    if (on_[i]) mods_[i]->onFaceChanged(*this, index);
+}
+
 void App::alarmChanged(const utility::Alarm& a) {
   Serial.printf("[alarm] %s %02d:%02d", a.enabled ? "on" : "off", a.hour, a.minute);
   const int left = machine_.minutesUntilAlarm();
@@ -100,13 +114,18 @@ void App::printKeyHelp(Print& out) const {
 
 void App::printInfo(Print& out) const {
   const utility::Alarm& a = machine_.alarm();
-  out.printf("[info] Dino %s, state %s, alarm %s %02d:%02d%s, free heap %u B, stack left %u B\n", FIRMWARE_VERSION,
+  out.printf("[info] %s %s, state %s, alarm %s %02d:%02d%s, free heap %u B, stack left %u B\n", FIRMWARE_NAME, FIRMWARE_VERSION,
              machine_.stateName(), a.enabled ? "on" : "off", a.hour, a.minute, machine_.snoozed() ? " (snoozed)" : "",
              (unsigned)ESP.getFreeHeap(), (unsigned)uxTaskGetStackHighWaterMark(NULL));
   for (int i = 0; i < n_; i++) {
     if (!on_[i]) { out.printf("[%s] not found\n", mods_[i]->name()); continue; }
     mods_[i]->printInfo(out);
   }
+}
+
+void App::prepareShutdown() {
+  for (int i = 0; i < n_; i++)
+    if (on_[i]) mods_[i]->onShutdown(*this);
 }
 
 uint32_t App::takeLoopWorstMs() {

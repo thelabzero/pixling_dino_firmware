@@ -23,13 +23,15 @@ enum class Act : uint8_t {
   FallAsleep, // the sleep clip once, then Asleep
   Asleep,     // loop: the asleep frames of the sleep clip, screen dimmed
   Wake,
+  Cute,       // 3 taps in a row (touch-only mode, ADR 012): shy, heart eyes, wink. Built by scenes::buildMood, not a sheet clip
+  Angry,      // 4 taps in a row: grumpy, steaming, shaking. Built by scenes::buildMood
   Count
 };
 
 // One row per Act: which clip, which of its frames, and whether it loops.
 struct ActDef {
   const char* name;
-  const char* clip;       // key in scenes::DINO_CLIP_KEYS
+  const char* clip;       // key in scenes::DINO_CLIP_KEYS ("" = not a sheet clip: scenes::buildMood draws it)
   uint8_t first, last;    // frames first..last of that clip (inclusive)
   bool loop;
 };
@@ -63,6 +65,8 @@ class Brain {
   void seed(uint32_t s) { rng_ = s ? s : 1; }
   void tick(uint32_t nowMs);                 // call every loop
   void onTouch(uint32_t nowMs);              // a tap while on the home screen
+  void onCute(uint32_t nowMs);               // three taps in a row: a cute expression
+  void onAngry(uint32_t nowMs);              // four taps in a row: an angry one
   void onFirmDoubleTap(uint32_t nowMs);      // rawr on demand (not wired: double tap = time on the home screen)
   void onShake(uint32_t nowMs);
   void onPickUp(uint32_t nowMs);

@@ -2,6 +2,11 @@
 // scenes/dino_live.*). On the home screen, a HomeScene module (the dino's day, modules/life.*) decides the
 // clip instead, and may dim the screen at night. Tells whoever chose the clip when a one-shot clip has finished.
 //
+// Power (config.h section 3 and 5c, decisions in power/power_policy): awake and untouched -> dim; asleep -> night dim,
+// then the panel is switched off and the CPU drops to the idle clock; touch, pick-up, tilt, shake and the alarm wake it.
+// HUD (power/hud): the battery icon (after a touch, when low, or on USB) and the clock (menu > CLOCK) are drawn over the
+// home screen's corners, which every dino clip leaves empty.
+//
 // Pipelined: while a frame is held on screen, the next one is rendered into a second buffer (a frame takes
 // 8-216 ms to draw on the chip, a hold can be as short as 60 ms; found on hardware, docs/debug-play-dino.md).
 #pragma once
@@ -10,6 +15,8 @@
 #include "../face/face.h"
 #include "../scenes/dino_live.h"
 #include "../boot/intro_player.h"
+#include "../power/hud.h"
+#include "../power/power_policy.h"
 
 class Screen : public Module {
  public:
@@ -18,7 +25,10 @@ class Screen : public Module {
   bool begin(App& app) override;
   void loop(App& app, uint32_t now) override;
   void printInfo(Print& out) const override;
-  void soakFill(soak::Record& r) const override { r.renderWorstMs = (uint16_t)(worstRenderUs_ / 1000); }
+  void soakFill(soak::Record& r) const override {
+    r.renderWorstMs = (uint16_t)(worstRenderUs_ / 1000);
+    if (off_) r.flags |= soak::FL_SCREEN_OFF | soak::FL_CPU_LOW;
+  }
   void onInput(App& app, input::Event e) override;   // a touch skips the boot film
   bool swallowsInput() const override { return intro_.active(); }
   bool onKey(App& app, char c) override;             // B = replay the boot film
@@ -35,6 +45,16 @@ class Screen : public Module {
   uint32_t frameAt_ = 0;
   bool finished_ = false;
   int contrast_ = -1;
+  power::ScreenMode mode_ = power::ScreenMode::Full;
+  bool off_ = false;            // the panel is switched off
+  bool wantOn_ = false;         // wake requested: the panel goes on once the right frame is in the buffer
+  bool presented_ = false;      // a frame was sent during this loop
+  uint32_t lastActivityMs_ = 0, asleepSinceMs_ = 0;
+  bool asleepSeen_ = false;
+  hud::State hud_;
+  void policy(App& app, uint32_t now);
+  hud::State hudNow(App& app, uint32_t now) const;
+  void panel(bool on);
   face::Grid bufA_, bufB_;     // 8 KB each: the Screen must not live on the stack
   face::Grid *shown_ = &bufA_, *prep_ = &bufB_;
   uint32_t lastRenderUs_ = 0, worstRenderUs_ = 0;

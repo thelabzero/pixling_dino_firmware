@@ -152,7 +152,7 @@ struct EyeP {
   Pup pup = Pup::Round;
   bool hasBrow = false;
   dreal ba = 0, bl = 0;
-  void apply(const EyeO& o);
+  void apply(const EyeO& o, dreal ws = 1, dreal hs = 1);  // ws/hs scale w and h (the wedge build shrinks the old scene overrides)
 };
 
 // Face overrides: only the fields you set. Numbers double as flags (0 = off).
@@ -175,6 +175,7 @@ struct FaceO {
   FaceO& cheeks(dreal v = 1) { cheeks_ = v; return *this; }
   FaceO& glasses(dreal v = 1) { glasses_ = v; return *this; }
   FaceO& mx(dreal v) { mx_ = v; return *this; }
+  FaceO& my(dreal v) { my_ = v; return *this; }
   FaceO& mw(dreal v) { mw_ = v; return *this; }
   FaceO& z(dreal v) { z_ = v; return *this; }
   FaceO& bang(dreal v = 1) { bang_ = v; return *this; }
@@ -203,7 +204,10 @@ struct FaceP {  // fully resolved face
 
 enum class Ex : uint8_t { Idle, Happy, Love, Curious, Sleepy, Asleep, Surprised, Grumpy, Rawr, Dizzy, Shy, Unimpressed, Mischief, Sad,
                           Focus, Excited, Hungry, Chew, Smug, Scared, Determined, Squeeze, Wink, Yawn, Count };
-FaceP resolve(Ex preset, const FaceO& over = FaceO());
+FaceP resolve(Ex preset, const FaceO& over = FaceO());  // Ex::Idle means "the default face" (setDefaultFace); every other preset is exact
+FaceP resolveExact(Ex preset, const FaceO& over = FaceO());  // the preset itself, never the default (the face picker shows these)
+void setDefaultFace(Ex e);   // the face dino rests on: what Ex::Idle draws. Starts as Idle itself (so the design check is unchanged)
+Ex defaultFace();
 
 void eye(Grid& g, dreal cx, dreal cy, const EyeP& e, int side, dreal t);
 void mouth(Grid& g, Mouth type, dreal mx, dreal my, dreal s, dreal mw);

@@ -14,9 +14,10 @@ void test_divider_doubles_for_equal_resistors() {
 
 void test_percent_curve() {
   TEST_ASSERT_EQUAL(100, lipoPercent(4250));
-  TEST_ASSERT_EQUAL(100, lipoPercent(4200));
-  TEST_ASSERT_EQUAL(50, lipoPercent(3840));
-  TEST_ASSERT_EQUAL(0, lipoPercent(3200));
+  TEST_ASSERT_EQUAL(100, lipoPercent(3960));  // a full cell reads ~3.83-3.96 V on this board
+  TEST_ASSERT_EQUAL(50, lipoPercent(3676));  // measured idle run: half the runtime left at 3.68 V
+  TEST_ASSERT_EQUAL(0, lipoPercent(3300));
+  TEST_ASSERT_EQUAL(0, lipoPercent(3100));
   TEST_ASSERT_TRUE(lipoPercent(3900) > lipoPercent(3800));
 }
 

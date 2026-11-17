@@ -99,6 +99,7 @@ const char* eventName(uint8_t id) {
     case EV_HOST_CONNECTED: return "host_connected";
     case EV_LOG_FULL: return "log_full";
     case EV_DUMP_STARTED: return "dump_started";
+    case EV_LOW_BATTERY_SLEEP: return "low_battery_sleep";
     default: return "?";
   }
 }

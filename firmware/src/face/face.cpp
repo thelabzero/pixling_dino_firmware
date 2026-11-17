@@ -99,9 +99,9 @@ void textC(Grid& g, const char* s, dreal cx, dreal y, Font f, int sc, uint8_t v)
 }
 
 // ---------- eye ----------
-void EyeP::apply(const EyeO& o) {
-  if (has(o.w_)) w = o.w_;
-  if (has(o.h_)) h = o.h_;
+void EyeP::apply(const EyeO& o, dreal ws, dreal hs) {
+  if (has(o.w_)) w = ws != 1 ? jr(o.w_ * ws) : o.w_;
+  if (has(o.h_)) h = hs != 1 ? jr(o.h_ * hs) : o.h_;
   if (has(o.r_)) r = o.r_;
   if (has(o.pr_)) pr = o.pr_;
   if (has(o.py_)) py = o.py_;
@@ -115,6 +115,16 @@ void EyeP::apply(const EyeO& o) {
   if (o.hasBrow_) { hasBrow = true; ba = o.ba_; bl = o.bl_; }
 }
 
+
+#ifdef DINO_WEDGE
+static const dreal FACE_K = 1.25;  // wedge faces are drawn 25 % bigger than page D (owner request 2026-11-12); same in wedge_face.js
+#else
+static const dreal FACE_K = 1;
+#endif
+
+#ifdef DINO_WEDGE
+#include "face_wedge.inc"  // wedge eyes + small mouths + wedge presets (firmware dino_wedge_c3)
+#else
 
 void eye(Grid& g, dreal cx, dreal cy, const EyeP& e, int side, dreal t) {
   dreal s = e.s != 0 ? e.s : 1;
@@ -264,6 +274,8 @@ void mouth(Grid& g, Mouth type, dreal mx, dreal my, dreal s, dreal mwf) {
   }
 }
 
+#endif  // DINO_WEDGE
+
 // ---------- effects and the whole face ----------
 struct EInfo { dreal ex, ey, hw, hh; };
 
@@ -293,7 +305,7 @@ static void fx(Grid& g, const FaceP& f, dreal cx, dreal cy, dreal s, dreal ax, c
 }
 
 void faceDraw(Grid& g, const FaceP& f) {
-  dreal s = f.s, cx = f.x + f.dx, cy = f.y + f.dy, sp = f.sp * s, t = f.t;
+  dreal s = f.s * FACE_K, cx = f.x + f.dx, cy = f.y + f.dy, sp = f.sp * s, t = f.t;
   dreal lkx = f.lookx, lky = f.looky, gx = lkx * 3 * s, gy = lky * 2 * s;
   EInfo E[2];
   for (int i = 0; i < 2; i++) {
@@ -328,6 +340,9 @@ void faceDraw(Grid& g, const FaceP& f) {
 
 // ---------- expression presets (the design's EX table) ----------
 static FaceO preset(Ex n) {
+#ifdef DINO_WEDGE
+  return presetWedge(n);
+#endif
   FaceO f;
   switch (n) {
     case Ex::Idle: return f.m(Mouth::Line);
@@ -381,11 +396,18 @@ FaceO FaceO::over(const FaceO& o) const {
   return r;
 }
 
-static void applyFace(FaceP& f, const FaceO& q) {
+// `scenes`: true for a scene's own overrides. They were written for the old 28 x 30 eye, so the wedge build scales their w/h.
+static void applyFace(FaceP& f, const FaceO& q, bool scenes = false) {
   auto m = [](dreal& a, dreal b) { if (has(b)) a = b; };
-  if (q.hasE_) { f.L.apply(q.e_); f.R.apply(q.e_); }
-  if (q.hasL_) f.L.apply(q.l_);
-  if (q.hasR_) f.R.apply(q.r_);
+#ifdef DINO_WEDGE
+  const dreal ws = scenes ? WEDGE_LEGACY_W : 1, hs = scenes ? WEDGE_LEGACY_H : 1;
+#else
+  const dreal ws = 1, hs = 1;
+  (void)scenes;
+#endif
+  if (q.hasE_) { f.L.apply(q.e_, ws, hs); f.R.apply(q.e_, ws, hs); }
+  if (q.hasL_) f.L.apply(q.l_, ws, hs);
+  if (q.hasR_) f.R.apply(q.r_, ws, hs);
   m(f.s, q.s_); m(f.x, q.x_); m(f.y, q.y_); m(f.dx, q.dx_); m(f.dy, q.dy_); m(f.sp, q.sp_); m(f.t, q.t_);
   if (has(q.lookx_)) { f.lookx = q.lookx_; f.looky = q.looky_; }
   m(f.cheeks, q.cheeks_); m(f.glasses, q.glasses_); m(f.nose, q.nose_); m(f.mx, q.mx_); m(f.my, q.my_); m(f.mw, q.mw_);
@@ -394,12 +416,23 @@ static void applyFace(FaceP& f, const FaceO& q) {
   if (q.m_ != Mouth::Unset) f.m = q.m_;
 }
 
-FaceP resolve(Ex n, const FaceO& over) {
+static Ex g_defaultFace = Ex::Idle;
+void setDefaultFace(Ex e) { g_defaultFace = e; }
+Ex defaultFace() { return g_defaultFace; }
+
+FaceP resolve(Ex n, const FaceO& over) { return resolveExact(n == Ex::Idle ? g_defaultFace : n, over); }
+
+FaceP resolveExact(Ex n, const FaceO& over) {
   FaceP f;
   f.L = EyeP(); f.R = EyeP();
+#ifdef DINO_WEDGE
+  f.L.w = f.R.w = 18; f.L.h = f.R.h = 14;  // wedge eyes, same size both sides
+  f.sp = 16; f.my = 15; f.nose = 0;        // eyes 16 px from centre, mouth 15 px below it, no nose
+#else
   f.R.w = 26; f.R.h = 28; f.R.r = 9;  // the design's BR (right eye is slightly smaller than BL)
+#endif
   applyFace(f, preset(n));
-  applyFace(f, over);
+  applyFace(f, over, true);
   return f;
 }
 

@@ -9,12 +9,22 @@
 // 1. Features: 1 = on, 0 = off. A feature that is off is not built at all (saves flash),
 //    and the dino still runs without it. To add one: "Adding a feature" in firmware/README.md.
 // =====================================================================================
+// Touch-only mode (ADR 012): use the dino with the touch pad alone. Tap = next, long tap = select, the menu is a list.
+// Build it with env dino_touch_c3 (-DTOUCH_ONLY=1). It turns the IMU off and the touch timings below change with it.
+#ifndef TOUCH_ONLY
+#define TOUCH_ONLY              0
+#endif
+#if TOUCH_ONLY
+#define FEATURE_IMU             0
+#else
 #define FEATURE_IMU             1   // MPU6050: tilt and flip (menu, set alarm, dismiss)
+#endif
 #define FEATURE_WIFI_TIME       1   // Wi-Fi time sync; off = clock shows --:-- and alarms never ring
 #define FEATURE_SERIAL_CONSOLE  1   // keys in the Serial monitor: touch stand-in + test commands
 #define FEATURE_BUZZER          1   // passive piezo on PIN_BUZZER: the dino's sounds
 #define FEATURE_SOUND_LOG       1   // also print each sound as "[sound] name"
 #define FEATURE_ALARM_STORE     1   // keep the alarm in flash (NVS) across power cuts
+#define FEATURE_FACE_STORE      1   // keep dino's default face (menu > Face) in flash across power cuts; off = it resets on reboot
 #define FEATURE_LIFE            1   // the dino's day on the home screen; off = the plain idle loop
 #define FEATURE_TOUCH           1   // HW-763 / TTP223 touch pad: tap, double tap, long press, hold
 #define FEATURE_BATTERY         1   // battery voltage through the divider on PIN_BATTERY_ADC
@@ -40,9 +50,12 @@
 #define SCREEN_H     64
 #define OLED_ADDR    0x3C
 #define OLED_RESET   -1
-#define SCREEN_DAY_CONTRAST    0xCF   // 0-255
+#define SCREEN_DAY_CONTRAST    0xAF   // 0-255 (was 0xCF; OLED current follows contrast, this is the main always-on saving)
+#define SCREEN_IDLE_CONTRAST   0x3F   // awake on the home screen but untouched for SCREEN_DIM_AFTER_S
+#define SCREEN_DIM_AFTER_S     60
+#define SCREEN_OFF_AFTER_S     30     // asleep this long: the panel is switched off (0 = never). Touch / pick-up / alarm wake it.
 #define BOOT_INTRO_FILM        2      // which film plays: 0 born, 1 dino, 2 zoom (chosen 2026-11-07), see src/boot/
-#define SCREEN_NIGHT_CONTRAST  0x01   // while the dino sleeps (the SSD1306 dims only a little: off is the real saving)
+#define SCREEN_NIGHT_CONTRAST  0x01   // while the dino sleeps, until the panel goes off
 
 // =====================================================================================
 // 4. IMU (MPU6050): calibration of THIS unit
@@ -89,9 +102,19 @@
 #define TOUCH_ACTIVE_HIGH     1      // TTP223 default: OUT = HIGH while touched
 #define TOUCH_DEBOUNCE_MS     30
 #define TOUCH_TAP_MAX_MS      300    // shorter = tap
+#if TOUCH_ONLY   // tap and long tap (no hold). In menus a tap acts at once; on the home screen taps are counted (below)
+#define TOUCH_DOUBLE_GAP_MS   0
+#define TOUCH_MULTI_GAP_MS    350    // home screen only: wait this long for the next tap. 2 taps = time, 3 = cute, 4 = angry
+#define TOUCH_MAX_TAPS        4
+#define TOUCH_LONG_MS         700    // released after this = long tap: select
+#define TOUCH_HOLD_MS         60000  // never reached in practice (the gesture timer is 16 bit)
+#else
 #define TOUCH_DOUBLE_GAP_MS   400    // second tap within this = double tap
+#define TOUCH_MULTI_GAP_MS    400    // (touch-only mode counts taps with its own gap on the home screen)
+#define TOUCH_MAX_TAPS        2
 #define TOUCH_LONG_MS         1500   // released after this (before hold) = long press: menu, back
 #define TOUCH_HOLD_MS         3000   // still touching at this = hold: alarm off, dismiss.
+#endif
                                      // Spec says 2 s; 3 s leaves a 1.5 s window for long press.
 
 // =====================================================================================
@@ -105,6 +128,15 @@
 #define BATTERY_LOG_S        60      // print the battery this often (0 = only on "b" / "i")
 #define BATTERY_MISSING_MV   2500    // below this: no battery connected
 #define BATTERY_MAX_MV       4350    // above this it is not a Li-ion cell: USB / charger voltage on the divider
+#define BATTERY_ICON_S       8       // home screen: show the battery icon this long after a touch / gesture (and always when low or on USB)
+#define BATTERY_LOW_PCT      20      // at or below this the icon stays on
+#define BATTERY_SAVER_PCT    15      // at or below this the awake home screen runs dimmed
+#define BATTERY_CUTOFF_MV    3300    // on battery below this for BATTERY_CUTOFF_HOLD_S: log, screen off, deep sleep (0 = never). Protects the cell.
+#define BATTERY_CUTOFF_HOLD_S 30
+#define BATTERY_RESUME_MV    3650    // in the low-battery sleep, wake up again at this rested voltage (or when USB is plugged in)
+#define BATTERY_SLEEP_CHECK_S 30     // low-battery sleep: wake this often to look at USB / the voltage
+#define POWER_CPU_ACTIVE_MHZ 160     // CPU clock while the screen is on (0 = never change it)
+#define POWER_CPU_IDLE_MHZ   80      // CPU clock while the screen is off (APB stays 80 MHz on the C3: I2C and USB are unaffected)
 
 // =====================================================================================
 // 5e. Soak log (ADR 007). One 48-byte record per sample; 12000 records = 576 KB, about 8 days at one a minute.
@@ -161,7 +193,7 @@
 // =====================================================================================
 // 7b. Dino's life (home screen: the design sheet's Life clips). Times in seconds / ms.
 // =====================================================================================
-#define LIFE_SLEEP_AFTER_S     300    // no input this long -> falls asleep, screen dims once asleep
+#define LIFE_SLEEP_AFTER_S     180    // no input this long -> falls asleep, screen dims, then goes off (was 300)
 #define LIFE_RAWR_MIN_S        120    // idle quirk (rawr) every 2-4 min
 #define LIFE_RAWR_MAX_S        240
 #define LIFE_OVERPET_TOUCHES   4      // this many touches ...

@@ -6,6 +6,7 @@ Python 3 + Pillow, Node for the sheet exporters. Run from the repo root.
 |---|---|
 | `face_check.py` | Builds the face rig on the desktop (`face_native.cpp`, `live_native.cpp`) and compares every frame with the reference in `art/reference/dino-v1/`, in double and float. Run after any change in `firmware/src/face/` or `scenes/` |
 | `export_dino_reference.js`, `dino_sheet_png.py` | Export frames, timing and contact sheets from the sheet's rig (`art/reference/dino-v1/rig.js`) |
+| `build_wedge_sheet.js`, `face_check_wedge.py` | Build the wedge-eye sheet (`art/reference/dino-wedge-v1/`) from the v1 rig + `wedge_face.js`; check the firmware's `DINO_WEDGE` face against it, frame by frame (ADR 010) |
 | `gen_dino_assets.js` | Fonts and icons from the sheet → `firmware/src/face/face_assets.h` (generated: don't edit by hand) |
 | `gen_portal_art.py` | The pixel "Pixling" logo and Dino of the Wi-Fi setup page, generated from the boot film's bitmaps (`firmware/src/boot/boot_film.cpp`) into `firmware/src/drivers/wifi_portal.cpp` (between the `<!--logo-->` / `<!--dino-->` markers). Re-run after changing those bitmaps |
 | `gen_readme_art.py` | The pixel banner and Dino faces in the README (`art/readme/*.svg`), generated from the boot film's bitmaps like the portal art. Re-run after changing those bitmaps |

@@ -4,6 +4,7 @@
 #include "config.h"
 #include "../app/app.h"
 #include "../boot/boot_film.h"
+#include "../power/hud.h"
 
 // The live face for the last frames of the boot film: the real rig, idle, with its blink (half / closed lids).
 // `px` is the Screen's own work Grid (a Grid is just its pixel array), so the rig draws straight into it.
@@ -24,6 +25,7 @@ Screen::Screen() : display_(SCREEN_W, SCREEN_H, &Wire, OLED_RESET) {}
 bool Screen::begin(App& app) {
   if (!display_.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) return false;
   Serial.printf("[screen] SSD1306 at 0x%02X\n", OLED_ADDR);
+  lastActivityMs_ = millis();
 #if FEATURE_BOOT_INTRO
   startIntro(millis());
 #else
@@ -48,8 +50,9 @@ void Screen::drawIntro() {
 }
 
 void Screen::onInput(App&, input::Event e) {
+  lastActivityMs_ = millis();  // any touch or gesture: wakes the panel, restarts the dim timer, shows the battery icon
   if (!intro_.active()) return;
-  if (e == input::Event::Tap || e == input::Event::DoubleTap || e == input::Event::LongPress || e == input::Event::Hold) {
+  if (e == input::Event::Tap || e == input::Event::DoubleTap || e == input::Event::TripleTap || e == input::Event::QuadTap || e == input::Event::LongPress || e == input::Event::Hold) {
     intro_.skip(millis());
     Serial.println("[screen] boot film skipped");
   }
@@ -71,12 +74,82 @@ void Screen::loop(App& app, uint32_t now) {
     if (!intro_.active()) {  // the film is over: hand the screen to the normal clips (force a restart of the current view)
       playing_.serial = app.machine().view().serial + 1;
       Serial.println("[screen] boot film done");
+      lastActivityMs_ = now;  // the battery icon shows for a few seconds after the film
       update(app, now);
     }
     return;
   }
+  presented_ = false;
+  policy(app, now);
+  const hud::State h = hudNow(app, now);
+  const bool hudChanged = h != hud_;
+  hud_ = h;
   update(app, now);
-  advance(app, now);
+  if (!off_) advance(app, now);
+  if (off_ && wantOn_) {  // wake: the panel goes on only now, with the current frame in it (no flash of the old one)
+    off_ = false;
+    wantOn_ = false;
+    panel(true);
+    if (!clip_.frames.empty()) present(*shown_);
+    display_.ssd1306_command(SSD1306_DISPLAYON);
+    presented_ = true;
+  }
+  if (hudChanged && !presented_ && !off_ && !clip_.frames.empty()) present(*shown_);  // minute changed, icon appeared...
+}
+
+// Which power mode the screen is in, and the switches that follow from it.
+void Screen::policy(App& app, uint32_t now) {
+  const bool home = home_ && app.homeScene();
+  const bool asleep = home && app.homeScene()->dimmed();
+  if (asleep) { if (!asleepSeen_) { asleepSeen_ = true; asleepSinceMs_ = now; } }
+  else asleepSeen_ = false;
+  const BatteryInfo* b = app.batteryInfo();
+  power::ScreenInput in;
+  in.home = home;
+  in.asleep = asleep;
+  in.idleMs = now - lastActivityMs_;
+  in.asleepMs = asleepSeen_ ? now - asleepSinceMs_ : 0;
+  in.saver = b && b->present() && !b->usb() && b->percent() <= BATTERY_SAVER_PCT;
+  power::ScreenConfig cfg;
+  cfg.dimAfterMs = (uint32_t)SCREEN_DIM_AFTER_S * 1000UL;
+  cfg.offAfterMs = (uint32_t)SCREEN_OFF_AFTER_S * 1000UL;
+  mode_ = power::decideScreen(cfg, in);
+  if (mode_ == power::ScreenMode::Off) { if (!off_) { off_ = true; wantOn_ = false; panel(false); } }
+  else if (off_) wantOn_ = true;
+}
+
+// Panel on / off. Off = display off + charge pump off (the real saving); the CPU drops to the idle clock with it.
+void Screen::panel(bool on) {
+  if (on) {
+    display_.ssd1306_command(SSD1306_CHARGEPUMP);
+    display_.ssd1306_command(0x14);
+    contrast_ = -1;  // brightness() sends the contrast again
+    if (POWER_CPU_ACTIVE_MHZ && getCpuFrequencyMhz() != (uint32_t)POWER_CPU_ACTIVE_MHZ) setCpuFrequencyMhz(POWER_CPU_ACTIVE_MHZ);
+    Serial.println("[screen] panel on");  // SSD1306_DISPLAYON is sent by loop() after the current frame is in the buffer
+  } else {
+    display_.ssd1306_command(SSD1306_DISPLAYOFF);
+    display_.ssd1306_command(SSD1306_CHARGEPUMP);
+    display_.ssd1306_command(0x10);
+    if (POWER_CPU_IDLE_MHZ && getCpuFrequencyMhz() != (uint32_t)POWER_CPU_IDLE_MHZ) setCpuFrequencyMhz(POWER_CPU_IDLE_MHZ);
+    Serial.println("[screen] panel off (asleep)");
+  }
+}
+
+// What the HUD shows now. Only on the home screen while the dino is awake.
+hud::State Screen::hudNow(App& app, uint32_t now) const {
+  hud::State h;
+  if (!home_ || mode_ == power::ScreenMode::Off || mode_ == power::ScreenMode::Night) return h;
+  const BatteryInfo* b = app.batteryInfo();
+  if (b && (b->present() || b->usb())) {
+    const bool usb = b->usb();
+    const bool recent = now - lastActivityMs_ < (uint32_t)BATTERY_ICON_S * 1000UL;
+    const bool low = !usb && b->percent() <= BATTERY_LOW_PCT;
+    if (recent || low || usb) { h.battery = true; h.charging = usb; h.percent = b->percent(); }
+  }
+  const utility::View& v = app.machine().view();
+  const utility::WallTime w = app.wallTime();
+  if (v.clockMode && w.valid) { h.clock = true; h.hour = w.hour; h.minute = w.minute; h.shift = v.shift; }
+  return h;
 }
 
 // Values that change inside a clip without restarting it (the minute, a countdown...).
@@ -112,10 +185,12 @@ void Screen::update(App& app, uint32_t now) {
   brightness(app);
 }
 
-// Night brightness only on the home screen while the dino sleeps; an alarm is always full brightness.
-void Screen::brightness(App& app) {
-  const bool dim = home_ && app.homeScene() && app.homeScene()->dimmed();
-  const int want = dim ? SCREEN_NIGHT_CONTRAST : SCREEN_DAY_CONTRAST;
+// Contrast follows the power mode (policy()): full, dimmed when idle, night dim while asleep. Alarms and the
+// utility screens are always full. Off keeps the last value.
+void Screen::brightness(App&) {
+  using power::ScreenMode;
+  if (mode_ == ScreenMode::Off) return;
+  const int want = mode_ == ScreenMode::Night ? SCREEN_NIGHT_CONTRAST : mode_ == ScreenMode::Idle ? SCREEN_IDLE_CONTRAST : SCREEN_DAY_CONTRAST;
   if (want == contrast_) return;
   contrast_ = want;
   display_.ssd1306_command(SSD1306_SETCONTRAST);
@@ -172,8 +247,10 @@ void Screen::prepareNext() {
 }
 
 void Screen::printInfo(Print& out) const {
-  out.printf("[screen] %s clip, frame %u/%u, contrast %d, render last %lu us worst %lu us\n", home_ ? "home (life)" : "utility",
-             (unsigned)frame_ + 1, (unsigned)clip_.frames.size(), contrast_, (unsigned long)lastRenderUs_, (unsigned long)worstRenderUs_);
+  static const char* const M[] = {"full", "idle-dim", "night", "off"};
+  out.printf("[screen] %s clip, frame %u/%u, power %s%s, contrast %d, CPU %lu MHz, render last %lu us worst %lu us\n", home_ ? "home (life)" : "utility",
+             (unsigned)frame_ + 1, (unsigned)clip_.frames.size(), M[(int)mode_], off_ ? " (panel off)" : "", contrast_,
+             (unsigned long)getCpuFrequencyMhz(), (unsigned long)lastRenderUs_, (unsigned long)worstRenderUs_);
 }
 
 // Pack 1 byte = 8 vertical pixels (SSD1306 page layout) and send.
@@ -186,5 +263,8 @@ void Screen::present(const face::Grid& g) {
         if (g.d[(page * 8 + bit) * face::W + x]) b |= 1 << bit;
       buf[page * face::W + x] = b;
     }
+  if (hud_.any()) hud::draw(hud_, buf);
+  presented_ = true;
+  if (off_) return;  // the panel is off: the buffer is kept, nothing is sent
   display_.display();
 }

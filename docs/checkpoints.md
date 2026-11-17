@@ -20,6 +20,9 @@ Owner chose film **C zoom** after previewing three candidates on the board (`env
 ## Soak log (ADR 007, 2026-11-09)
 Code complete, not yet run on the board. The dino keeps a flash log (boot + reset reason, a health sample a minute, events) that survives a dead battery; `w` dumps it, `x x` erases, `tools/soak_dump.py` + `tools/soak_report.py` collect and analyse. 120 native tests pass (9 new, `test_soak`), `dino_c3` builds with no warnings, flash 80.6%. First use: the battery-to-empty run in `docs/soak-checklist.md` (no multimeter: voltage uncalibrated, hours are the reliable number). Closes the D5 24 h soak once a full run is analysed.
 
+## Guide page in the brand language (ADR 008, 2026-11-09)
+The public guide (repo `pixling-dino-guide`, GitHub Pages) was restyled with the Pixling brand language (the green palette and CSS-drawn face are gone): Night/cream/teal, ice blue only on the device-screen animations, IBM Plex self-hosted, wordmark and Dino generated from `boot_film.cpp` by the guide repo's `gen_brand_art.py`. Checked in headless Chrome at desktop width (dark); light mode and a real phone not yet looked at. Not committed or pushed yet. Firmware, boot film and portal were already in the brand language; `tools/imu_calibrator/imu_calibrator.html` (developer tool) is not restyled.
+
 ## Known risks
 
 - Face rig render cost on the C3 is unmeasured (measured later: 8-216 ms/frame, see D3). Fallback: pre-bake 416 frames (~416 KB).
@@ -31,3 +34,19 @@ Code complete, not yet run on the board. The dino keeps a flash log (boot + rese
 - Voice timing is counted from when the home clip is built, not from what the OLED shows.
 - A frame render (up to ~100-200 ms for glasses frames) runs inside the loop and can delay the alarm tick by that much.
 - Menu has 5 slots (Clock, Alarm, Focus, Stopwatch, Back); Games/Friends/Messages/Settings come later. Stopwatch icon is drawn in code (not in the sheet).
+
+
+## Power saving, battery icon, clock mode (2026-11-09, firmware 0.4.0, ADR 009)
+- Code complete: panel off while asleep, idle dim, CPU 80 MHz while off, battery icon + percent (measured curve),
+  empty-battery deep sleep at 3.3 V, menu > CLOCK now draws the time. 132 native tests pass, all envs build, face check passes.
+- NOT yet run on the board: `docs/power-checklist.md`. Savings are estimates until a soak run from a full charge is compared with the 0.3.1 baseline.
+- Open: light sleep, IMU low-power mode (needs a `play_inputs` re-run), MPU INT wiring, percentage while charging (the divider cannot see the cell on USB).
+
+## Wedge-eye firmware (2026-11-12, "Dino Wedge" 0.4.0-wedge, ADR 010)
+Env `dino_wedge_c3`: same logic as `dino_c3`, new-eyes page D face (wedge eyes, small mouth, no nose). Code complete, builds, `tools/face_check_wedge.py` 251/251 frames match the wedge sheet, 132 native tests pass. NOT yet run on the board; open: how the 1 px mouth and slanted eyes look on the panel, and review of the 8 presets we designed ourselves.
+
+## Default face picker (2026-11-12, ADR 011, both firmwares)
+Menu > Face: tilt through 10 faces, tap, warning, tap again; saved in flash and used as dino's idle face. Code complete, 140 native tests pass, both face checks 251/251, all envs build. NOT yet run on the board (steps in ADR 011).
+
+## Touch-only mode (2026-11-17, updated 2026-11-18, ADR 012, envs `dino_touch_c3` / `dino_touch_wedge_c3`)
+Tap = next, long tap = select, no IMU. The menu is a zoomed list, 3 rows at a time with a scroll effect; set alarm gets an ON / OFF step; on the home screen 2 taps = time, 3 = cute, 4 = angry; clock mode draws the time 2x bigger (all firmwares). Code complete, 164 native tests pass, face checks 251/251, all four firmware envs build. NOT yet run on the board: `docs/touch-only-checklist.md`. Open: no Back row in the focus picker; single tap on home answers ~0.35 s later (taps are counted); cute / angry exist on the home screen only.

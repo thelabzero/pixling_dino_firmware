@@ -39,6 +39,7 @@ Sound Machine::nextSound() {
 void Machine::show(Clip c, int a, int b) {
   view_.clip = c; view_.a = a; view_.b = b;
   view_.clockMode = clockMode_;
+  view_.touchOnly = set_.touchOnly;
   view_.serial++;
 }
 
@@ -72,7 +73,7 @@ void Machine::goHome(uint32_t now) {
 const char* Machine::stateNameOf(uint8_t code) {
   static const char* const N[] = {"home", "time_board", "menu", "menu_swap", "set_alarm", "set_alarm_done", "ringing",
                                   "snooze", "dismiss", "focus_pick", "focus_start", "focus_work", "focus_done",
-                                  "break", "stopwatch", "wifi_setup", "wifi_result"};
+                                  "break", "stopwatch", "wifi_setup", "wifi_result", "face_pick", "face_confirm", "face_done"};
   return code < sizeof(N) / sizeof(N[0]) ? N[code] : "?";
 }
 
@@ -106,13 +107,31 @@ void Machine::go(State s, uint32_t now) {
   refreshTexts(now);
 }
 
+// Touch-only mode (ADR 012): one pad, two gestures. Hold counts as a long press. In the lists and pickers a tap moves
+// to the next item (what a tilt right does) and a long press selects (what a tap does); where a tap confirmed and a
+// long press cancelled (default face), they swap. While ringing, a long press dismisses (what hold does).
+Event Machine::translate(Event e) const {
+  if (!set_.touchOnly) return e;
+  if (e == Event::Hold) e = Event::LongPress;
+  const bool tap = e == Event::Tap, lng = e == Event::LongPress;
+  switch (state_) {
+    case State::Ringing: return lng ? Event::Hold : e;
+    case State::Menu: case State::MenuSwap: case State::FacePick: case State::FocusPick: case State::SetAlarm:
+      return tap ? Event::TiltRight : lng ? Event::Tap : e;
+    case State::FaceConfirm: return tap ? Event::LongPress : lng ? Event::Tap : e;
+    default: return e;
+  }
+}
+
 void Machine::onEvent(Event e, uint32_t now) {
   lastInputMs_ = now;
-  handle(e, now);
+  handle(translate(e), now);
   refreshTexts(now);
 }
 
 void Machine::handle(Event e, uint32_t now) {
+  // Touch-only list: a tap while the list still scrolls finishes that scroll at once, so quick taps are never lost.
+  if (state_ == State::MenuSwap && set_.touchOnly) { menu_ = menuNext_; state_ = State::Menu; show(Clip::Menu, menu_); }
   switch (state_) {
     case State::Ringing:
       if (e == Event::Tap) {
@@ -130,23 +149,48 @@ void Machine::handle(Event e, uint32_t now) {
       return;
 
     case State::Menu:
-      if (e == Event::TiltRight || e == Event::TiltLeft) {
+      if (e == Event::TiltRight || e == Event::TiltLeft) {   // cards: slide; touch-only list: scroll (same clip, drawn as a list)
         menuNext_ = (menu_ + (e == Event::TiltRight ? 1 : MENU_SLOTS - 1)) % MENU_SLOTS;
         state_ = State::MenuSwap; show(Clip::MenuSwap, menu_, menuNext_); play(Sound::MenuMove);
       } else if (e == Event::Tap) {
         play(Sound::MenuSelect);
         switch (menu_) {
           case 0: clockMode_ = !clockMode_; goHome(now); break;                      // clock mode on/off
-          case 1: startAlarmEdit(); field_ = 0; state_ = State::SetAlarm; show(Clip::SetAlarm, 0); break;
+          case 1: startAlarmEdit(); field_ = 0; alarmOn_ = true; state_ = State::SetAlarm; show(Clip::SetAlarm, 0); break;
           case 2: focusLen_ = set_.focusMinutes[0]; state_ = State::FocusPick; show(Clip::FocusPick, focusLen_); break;
           case 3:  // Play: games come later; the stopwatch lives here for now
             stopwatchRunning_ = true; swStartMs_ = now; swPausedMs_ = 0; swLastMinute_ = 0;
             go(State::Stopwatch, now); break;
           case 4: startWifi(); break;                                                // connect your dino (Wi-Fi setup)
+          case FACE_SLOT: faceSel_ = defaultFace_; state_ = State::FacePick; show(Clip::FacePick, faceSel_, 1); break;  // pick the default face
           default: goHome(now); break;                                               // back
         }
       } else if (e == Event::LongPress || e == Event::Hold) {
         goHome(now);
+      }
+      return;
+
+    case State::FacePick:
+      if (view_.clip != Clip::FacePick) return;  // let the tilt animation finish
+      if (e == Event::TiltRight || e == Event::TiltLeft) {
+        const int d = e == Event::TiltRight ? 1 : -1;
+        faceSel_ = (faceSel_ + FACE_CHOICES + d) % FACE_CHOICES;
+        show(Clip::FacePickTilt, faceSel_, d); play(Sound::MenuMove);
+      } else if (e == Event::Tap) {
+        play(Sound::MenuSelect);
+        if (faceSel_ == defaultFace_) goHome(now);                  // already the default: nothing to confirm
+        else { state_ = State::FaceConfirm; show(Clip::FaceConfirm, faceSel_); }
+      } else if (e == Event::LongPress || e == Event::Hold) {
+        goHome(now);                                                // leave without changes
+      }
+      return;
+
+    case State::FaceConfirm:
+      if (e == Event::Tap) {                                        // the second tap makes it final
+        defaultFace_ = faceSel_; faceSave_ = true;
+        state_ = State::FaceDone; show(Clip::FaceDone, faceSel_); play(Sound::AlarmSet);   // alarm_set = the happy warble
+      } else if (e == Event::LongPress || e == Event::Hold) {       // changed my mind: back to the picker
+        state_ = State::FacePick; show(Clip::FacePick, faceSel_, faceSel_ == defaultFace_ ? 1 : 0); play(Sound::MenuMove);
       }
       return;
 
@@ -156,7 +200,10 @@ void Machine::handle(Event e, uint32_t now) {
 
     case State::SetAlarm:
       if (view_.clip != Clip::SetAlarm) return;  // let the tilt / confirm animation finish
-      if (e == Event::TiltRight || e == Event::TiltLeft) {
+      if (field_ == 2 && (e == Event::TiltRight || e == Event::TiltLeft)) {   // touch-only: tap flips on / off
+        alarmOn_ = !alarmOn_;
+        show(Clip::SetAlarm, 2, alarmOn_ ? 1 : 0); play(Sound::MenuMove);
+      } else if (e == Event::TiltRight || e == Event::TiltLeft) {
         int d = e == Event::TiltRight ? 1 : -1;
         if (field_ == 0) editing_.hour = (editing_.hour + 24 + d) % 24;
         else {  // minute steps; an off-grid value snaps to the next mark in that direction
@@ -170,6 +217,8 @@ void Machine::handle(Event e, uint32_t now) {
         refreshTexts(now);
       } else if (e == Event::Tap) {
         if (field_ == 0) { field_ = 1; show(Clip::SetAlarm, 1); }
+        else if (field_ == 1 && set_.touchOnly) { field_ = 2; show(Clip::SetAlarm, 2, alarmOn_ ? 1 : 0); }  // one more step: on or off
+        else if (field_ == 2 && !alarmOn_) { alarm_.enabled = false; save_ = true; play(Sound::AlarmOff); goHome(now); }
         else {
           alarm_ = editing_; alarm_.enabled = true; save_ = true;
           firedMinute_ = -1;
@@ -241,6 +290,8 @@ void Machine::clipDone(uint32_t now) {
       resumeFocus_ = resumeBreak_ = resumeStopwatch_ = false;
       break;
     case Clip::FocusPickTilt: show(Clip::FocusPick, focusLen_); break;
+    case Clip::FacePickTilt: show(Clip::FacePick, faceSel_, faceSel_ == defaultFace_ ? 1 : 0); break;
+    case Clip::FaceDone: goHome(now); break;
     case Clip::FocusStart: go(State::FocusWork, now); break;
     case Clip::FocusDone: breakEndMs_ = now + set_.breakMs; go(State::Break, now); break;
     case Clip::StopwatchTap: show(Clip::Stopwatch); refreshTexts(now); break;
@@ -296,6 +347,9 @@ void Machine::refreshTexts(uint32_t now) {
       }
       break;
     }
+    case Clip::Menu:  // the list shows the alarm's time (or OFF) on its Alarm row
+      if (alarm_.enabled) hhmm(true, alarm_.hour, alarm_.minute, view_.note); else strcpy(view_.note, "OFF");
+      break;
     case Clip::FocusWork: case Clip::FocusDone: case Clip::Break: {
       uint32_t end = view_.clip == Clip::Break ? breakEndMs_ : focusEndMs_;
       uint32_t left = (end && before(now, end)) ? end - now : 0;
@@ -357,9 +411,10 @@ void Machine::tick(const WallTime& t, uint32_t now) {
   }
 
   // ---- menus give up when left alone
-  if ((state_ == State::Menu || state_ == State::SetAlarm || state_ == State::FocusPick) &&
+  if ((state_ == State::Menu || state_ == State::SetAlarm || state_ == State::FocusPick || state_ == State::FacePick || state_ == State::FaceConfirm) &&
       (int32_t)(now - lastInputMs_) > (int32_t)set_.menuIdleMs &&  // signed: an input stamped a moment after `now` is not "long ago"
-      (view_.clip == Clip::Menu || view_.clip == Clip::SetAlarm || view_.clip == Clip::FocusPick)) {
+      (view_.clip == Clip::Menu || view_.clip == Clip::SetAlarm || view_.clip == Clip::FocusPick || view_.clip == Clip::FacePick ||
+       view_.clip == Clip::FaceConfirm)) {
     goHome(now);
     return;
   }

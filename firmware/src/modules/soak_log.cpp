@@ -255,7 +255,7 @@ void SoakLog::pumpDump() {
       Serial.printf("SOAKDUMP BEGIN version=1 firmware=%s slots=%lu boot_now=%u uptime_now_s=%lu%s\n", FIRMWARE_VERSION,
                     (unsigned long)dumpSlots_, (unsigned)boot_, (unsigned long)(millis() / 1000), full_ ? " log_full=1" : "");
       Serial.print("SOAKDUMP STATES ");
-      for (uint8_t i = 0; i < 17; i++) Serial.printf("%s%u=%s", i ? "," : "", (unsigned)i, utility::Machine::stateNameOf(i));
+      for (uint8_t i = 0; i < 20; i++) Serial.printf("%s%u=%s", i ? "," : "", (unsigned)i, utility::Machine::stateNameOf(i));
       Serial.println();
       Serial.printf("SOAKDUMP COLUMNS %s\n", csvHeader() + 2);
       dump_ = Dump::Rows;
@@ -315,4 +315,10 @@ void SoakLog::printInfo(Print& out) const {
   out.printf("[soak] %lu records in flash + %u waiting, boot #%u, flash used %lu of %lu B, last write %lu s ago%s\n",
              (unsigned long)fileRecords_, (unsigned)pending_, (unsigned)boot_, (unsigned long)LittleFS.usedBytes(),
              (unsigned long)LittleFS.totalBytes(), (unsigned long)((millis() - lastFlushMs_) / 1000), full_ ? ", FULL" : "");
+}
+
+void SoakLog::onShutdown(App& app) {
+  if (!fsOk_) return;
+  event(app, EV_LOW_BATTERY_SLEEP, lastBattMv_);
+  flush();
 }

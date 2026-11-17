@@ -28,6 +28,7 @@ enum Event : uint8_t {
   EV_HOST_CONNECTED = 8,     // a Serial monitor opened
   EV_LOG_FULL = 9,           // the file reached its limit: samples stop
   EV_DUMP_STARTED = 10,
+  EV_LOW_BATTERY_SLEEP = 11, // the empty-battery shutdown; arg = mV
 };
 
 // Sample flags (Record::flags).
@@ -36,6 +37,8 @@ enum Flag : uint16_t {
   FL_HOST_OPEN = 1 << 1,     // a Serial monitor was open
   FL_TIME_VALID = 1 << 2,    // the wall clock had been synced
   FL_NO_BATTERY = 1 << 3,    // battery pin reads below BATTERY_MISSING_MV
+  FL_SCREEN_OFF = 1 << 4,    // the panel was switched off (asleep): the idle saving was active
+  FL_CPU_LOW = 1 << 5,       // the CPU ran at the idle clock
 };
 
 struct Record {

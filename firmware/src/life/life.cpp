@@ -15,6 +15,8 @@ static const ActDef DEFS[] = {
     {"fall_asleep", "sleep", 0, 4, false},
     {"asleep", "sleep", 3, 4, true},   // the two asleep frames loop
     {"wake", "wake", 0, 7, false},
+    {"cute", "", 0, 255, false},       // last = past the end: the whole clip
+    {"angry", "", 0, 255, false},
 };
 static_assert(sizeof(DEFS) / sizeof(DEFS[0]) == (int)Act::Count, "one row per Act");
 
@@ -31,6 +33,9 @@ static const Cue CUES[] = {
     {Act::Shake, 2, Voice::Dizzy},     // spinning pupils
     {Act::PickUp, 0, Voice::Squeak},   // lifted
     {Act::FallAsleep, 0, Voice::Sigh},
+    {Act::Cute, 0, Voice::Purr},       // shy
+    {Act::Cute, 2, Voice::Trill},      // heart eyes
+    {Act::Angry, 1, Voice::Growl},     // the grumpy face
 };
 const Cue* cues(int& count) { count = sizeof(CUES) / sizeof(CUES[0]); return CUES; }
 
@@ -123,6 +128,21 @@ void Brain::onTouch(uint32_t now) {
     return;
   }
   if (atBase()) later(Act::Pet, now);
+}
+
+// Three taps in a row: a cute expression. Four: an angry one. Like a touch they wait for the reaction pause, wake a
+// sleeping dino first, and only play from the base (a clip already playing is not cut short). They are not "touches":
+// they do not count towards over-petting.
+void Brain::onCute(uint32_t now) {
+  touched(now);
+  if (wakeIfAsleep(now, true)) return;
+  if (atBase()) later(Act::Cute, now);
+}
+
+void Brain::onAngry(uint32_t now) {
+  touched(now);
+  if (wakeIfAsleep(now, true)) return;
+  if (atBase()) later(Act::Angry, now);
 }
 
 // Rawr on demand.

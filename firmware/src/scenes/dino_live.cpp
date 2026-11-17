@@ -17,8 +17,10 @@ namespace {
 constexpr int SLOTS = utility::Machine::MENU_SLOTS;
 struct Card { Icon icon; const char* label; Ex ex; };
 const Card CARDS[SLOTS] = {{Icon::Clock, "CLOCK", Ex::Smug}, {Icon::Alarm, "ALARM", Ex::Surprised}, {Icon::Focus, "FOCUS", Ex::Focus},
-                           {Icon::Clock, "STOPWATCH", Ex::Determined}, {Icon::Clock, "WI-FI", Ex::Curious}, {Icon::Back, "BACK", Ex::Idle}};
-constexpr int STOPWATCH_SLOT = 3, WIFI_SLOT = 4, BACK_SLOT = 5;  // slots whose icon is drawn in code (the sheet has none) / the Back card
+                           {Icon::Clock, "STOPWATCH", Ex::Determined}, {Icon::Clock, "WI-FI", Ex::Curious}, {Icon::Clock, "FACE", Ex::Happy},
+                           {Icon::Back, "BACK", Ex::Idle}};
+constexpr int STOPWATCH_SLOT = 3, WIFI_SLOT = 4, FACE_SLOT = utility::Machine::FACE_SLOT, BACK_SLOT = 6;  // slots whose icon is drawn in code (the sheet has none) / the Back card
+static_assert(BACK_SLOT == SLOTS - 1, "Back is the last menu card");
 
 // The Wi-Fi logo (the sheet has none): a dot and up to `level` (0-3) arcs above it, drawn from the dot at (cx, cy).
 void wifiLogo(Grid& g, int cx, int cy, int level) {
@@ -41,11 +43,19 @@ void stopwatchIcon(Grid& g, int x, int y) {
   line(g, x + 7, y + 9, x + 7, y + 5);
   line(g, x + 7, y + 9, x + 10, y + 9);
 }
+// The Face card's icon: a little face (rounded box, two eyes, a mouth), same 16x16 and 1 px line style.
+void faceIcon(Grid& g, int x, int y) {
+  edge(g, rr(x + 7.5, y + 7.5, 7.5, 6.5, 3), bE(x + 7.5, y + 7.5, 7.5, 6.5));
+  fillRect(g, x + 3, y + 4, x + 5, y + 7);
+  fillRect(g, x + 10, y + 4, x + 12, y + 7);
+  fillRect(g, x + 5, y + 10, x + 10, y + 10);
+}
 Draw mcard(int slot, int dx = 0, int dy = 0) {
   return fn([=](Grid& g) {
     card(g, 58 + dx, 5 + dy, 28, 26);
     if (slot == STOPWATCH_SLOT) stopwatchIcon(g, 64 + dx, 10 + dy);
     else if (slot == WIFI_SLOT) wifiLogo(g, 72 + dx, 24 + dy, 3);
+    else if (slot == FACE_SLOT) faceIcon(g, 64 + dx, 10 + dy);
     else stampIcon(g, CARDS[slot].icon, 64 + dx, 10 + dy);
   });
 }
@@ -90,6 +100,43 @@ __attribute__((noinline)) void menu(LiveClip& c, const View& v) {
   const int s = v.a % SLOTS;
   c.frames.push_back(fr(1100, "", {sm(CARDS[s].ex, menuLook(s)), mcard(s), tc(CARDS[s].label, 72, 40), mdots(s), menuArrows()}));
 }
+// Touch-only mode (ADR 012): the menu is just a list, zoomed: 3 rows at a time in 2x text, the marked row inverted, a bar on the
+// right edge showing where the window is. No face, no cards. The Clock row shows ON / OFF, the Alarm row its time or OFF (v.note).
+// The window follows the mark: row 0 at the top, row 6 at the bottom, the middle rows with a neighbour above and below.
+constexpr int LIST_ROWS = 3, ROW_H = 21, ROW_BAR_H = 20;
+int listTop(int sel) { return sel <= 0 ? 0 : sel >= SLOTS - 1 ? SLOTS - LIST_ROWS : sel - 1; }
+// Draw the list with its window `scroll` px down and the mark at row position `mark` (px, from the top of row 0).
+Draw listView(int scroll, int mark, bool clockOn, std::string alarm) {
+  return fn([=](Grid& g) {
+    const int barTop = 1 + mark - scroll;                       // the inverted bar follows the mark
+    fillRect(g, 0, barTop < 0 ? 0 : barTop, 121, barTop + ROW_BAR_H - 1 > 63 ? 63 : barTop + ROW_BAR_H - 1);
+    for (int i = 0; i < SLOTS; i++) {
+      const int y = 1 + i * ROW_H - scroll;
+      if (y + ROW_BAR_H < 0 || y > 63) continue;
+      const int d = y - barTop;
+      const uint8_t ink = (d < ROW_H / 2 && d > -ROW_H / 2) ? 0 : 1;   // a row on the bar is drawn dark on light
+      text(g, CARDS[i].label, 5, y + 3, Font::Txt, 2, ink);
+      const char* val = i == 0 ? (clockOn ? "ON" : "OFF") : i == 1 ? alarm.c_str() : nullptr;
+      if (val && val[0]) text(g, val, 118 - textW(val, Font::Txt), y + 7, Font::Txt, 1, ink);   // small, so label and value never collide
+    }
+    const int barH = 64 * LIST_ROWS / SLOTS, barY = scroll * (64 - barH) / ((SLOTS - LIST_ROWS) * ROW_H);
+    fillRect(g, 126, barY, 127, barY + barH - 1);   // where the window is
+  });
+}
+__attribute__((noinline)) void menuList(LiveClip& c, const View& v) {
+  const int sel = v.a % SLOTS;
+  c.frames.push_back(fr(1000, "", {listView(listTop(sel) * ROW_H, sel * ROW_H, v.clockMode, v.note)}));
+}
+// The list scrolls from row a to row b: 4 quick steps (35 ms each) of the window and the mark together.
+__attribute__((noinline)) void menuListSwap(LiveClip& c, const View& v) {
+  const int a = v.a % SLOTS, b = v.b % SLOTS;
+  for (int k = 1; k <= 4; k++) {
+    const int scroll = listTop(a) * ROW_H + (listTop(b) - listTop(a)) * ROW_H * k / 4;
+    const int mark = a * ROW_H + (b - a) * ROW_H * k / 4;
+    c.frames.push_back(fr(35, "scroll", {listView(scroll, mark, v.clockMode, v.note)}));
+  }
+  c.loop = false;
+}
 __attribute__((noinline)) void menuSwap(LiveClip& c, const View& v) {
   const int a = v.a % SLOTS, b = v.b % SLOTS;
   c.frames.push_back(fr(120, "slide", {sm(Ex::Idle, FaceO().x(23).look(1, 0)), mcard(a, 5), spd(52, 9, 27), mdots(a)}));
@@ -110,7 +157,19 @@ Draw aboard(std::string t, char u, int dy = 0) {
 Frame aframe(const View& v, char u, Ex ex, const FaceO& o, uint32_t ms, int bdy = 0) {
   return fr(ms, "", {sm(ex, FaceO().look(1, -0.2).over(o)), aboard(v.text, u, bdy), tc("ALARM", 86, 2)});
 }
+// Touch-only: the last step after hours and minutes. Tap flips ON / OFF, long press confirms.
+__attribute__((noinline)) void setAlarmOnOff(LiveClip& c, const View& v) {
+  const bool on = v.b != 0;
+  const Ex ex = on ? Ex::Idle : Ex::Sleepy;
+  const Draw label = tc(on ? "ALARM ON" : "ALARM OFF", 86, 43);
+  const Draw hint = tc("TAP: FLIP  LONG: OK", 86, 56, Font::Small);
+  Frame a = aframe(v, 0, ex, FaceO(), 2400); a.ops.push_back(label); a.ops.push_back(hint);
+  Frame b = aframe(v, 0, ex, FaceO().E(SHUT), 80); b.ops.push_back(label); b.ops.push_back(hint);
+  c.frames.push_back(std::move(a));
+  c.frames.push_back(std::move(b));
+}
 __attribute__((noinline)) void setAlarm(LiveClip& c, const View& v) {
+  if (v.a == 2) { setAlarmOnOff(c, v); return; }
   const char u = v.a == 0 ? 'h' : 'm';
   c.frames.push_back(aframe(v, u, Ex::Idle, FaceO(), 400));   // underline on
   c.frames.push_back(aframe(v, 0, Ex::Idle, FaceO(), 400));   // underline off: blinks at 1.25 Hz (the only blinking thing)
@@ -255,15 +314,94 @@ __attribute__((noinline)) void wifiFail(LiveClip& c) {
   c.loop = false;
 }
 
+// ---- default face: pick (tilt to browse) -> confirm (tap again) -> saved. The candidates are drawn exact, never as "the default".
+const FaceChoice FACES[utility::Machine::FACE_CHOICES] = {
+    {Ex::Idle, "CALM"}, {Ex::Happy, "HAPPY"}, {Ex::Mischief, "MISCHIEF"}, {Ex::Smug, "SMUG"}, {Ex::Curious, "CURIOUS"},
+    {Ex::Sleepy, "SLEEPY"}, {Ex::Unimpressed, "BORED"}, {Ex::Determined, "DETERMINED"}, {Ex::Surprised, "SURPRISED"}, {Ex::Shy, "SHY"}};
+static_assert(sizeof(FACES) / sizeof(FACES[0]) == utility::Machine::FACE_CHOICES, "one entry per FACE_CHOICES");
+
+int faceIndex(int a) { return a < 0 || a >= utility::Machine::FACE_CHOICES ? 0 : a; }
+// The picker: the candidate face smaller than home (0.65) so the name fits above (old brows included) and the hint below; arrows at the sides.
+Draw pickerText(int sel, bool isDefault, bool touch = false) {
+  char n[8]; snprintf(n, sizeof n, "%d/%d", sel + 1, utility::Machine::FACE_CHOICES);
+  const std::string count = n, name = FACES[sel].name;
+  return fn([=](Grid& g) {
+    textC(g, name.c_str(), 64, 1);
+    text(g, count.c_str(), 127 - textW(count.c_str(), Font::Small), 1, Font::Small);
+    textC(g, isDefault ? "YOUR DEFAULT" : touch ? "LONG TAP: PICK" : "TAP TO CHOOSE", 64, 57);
+    if (!touch) text(g, "<", 3, 26, Font::Small);   // touch-only: a tap only goes forward
+    text(g, ">", 121, 26, Font::Small);
+  });
+}
+Draw pickerFace(int sel, const FaceO& o = FaceO()) { return fexact(FACES[sel].ex, FaceO().s(0.65).y(31).over(o)); }
+__attribute__((noinline)) void facePick(LiveClip& c, const View& v) {
+  const int sel = faceIndex(v.a);
+  const bool d = v.b != 0;
+  const bool t = v.touchOnly;
+  c.frames.push_back(fr(2400, "", {pickerFace(sel), pickerText(sel, d, t)}));
+  c.frames.push_back(fr(80, "blink", {pickerFace(sel, FaceO().E(HALF)), pickerText(sel, d, t)}));
+  c.frames.push_back(fr(80, "blink", {pickerFace(sel, FaceO().E(SHUT)), pickerText(sel, d, t)}));
+  c.frames.push_back(fr(80, "blink", {pickerFace(sel, FaceO().E(HALF)), pickerText(sel, d, t)}));
+}
+__attribute__((noinline)) void facePickTilt(LiveClip& c, const View& v) {
+  const int sel = faceIndex(v.a);
+  c.frames.push_back(fr(140, "", {pickerFace(sel, FaceO().dx(v.b > 0 ? 3 : -3)), pickerText(sel, false, v.touchOnly)}));
+  c.loop = false;
+}
+// The warning: this face will be dino's default from now on. A second tap makes it final; hold goes back.
+__attribute__((noinline)) void faceConfirm(LiveClip& c, const View& v) {
+  const int sel = faceIndex(v.a);
+  const bool touch = v.touchOnly;   // touch-only: long press = yes, tap = no
+  const Draw t = fn([=](Grid& g) {
+    textC(g, "MAKE THIS", 88, 8); textC(g, "YOUR DEFAULT?", 88, 17);
+    textC(g, touch ? "LONG TAP: YES" : "TAP AGAIN: YES", 88, 38); textC(g, touch ? "TAP: NO" : "HOLD: NO", 88, 47);
+  });
+  c.frames.push_back(fr(2400, "", {fexact(FACES[sel].ex, FaceO().s(0.55).x(24).y(31).look(1, 0)), t}));
+  c.frames.push_back(fr(80, "blink", {fexact(FACES[sel].ex, FaceO().s(0.55).x(24).y(31).look(1, 0).E(SHUT)), t}));
+}
+__attribute__((noinline)) void faceDone(LiveClip& c, const View& v) {
+  const int sel = faceIndex(v.a);
+  const Draw t = fn([](Grid& g) { textC(g, "NEW DEFAULT", 88, 22); textC(g, "FACE SAVED", 88, 32); });
+  c.frames.push_back(fr(1300, "", {fexact(Ex::Happy, FaceO().s(0.55).x(24).y(31).look(1, 0).heart()), t}));
+  c.frames.push_back(fr(500, "", {fexact(FACES[sel].ex)}));   // exact: the rig's default is updated just after this clip is built
+  c.loop = false;
+}
+
 }  // namespace
+
+const FaceChoice& faceChoice(int index) { return FACES[faceIndex(index)]; }
+void applyDefaultFace(int index) { face::setDefaultFace(FACES[faceIndex(index)].ex); }
+
+void buildMood(bool angry, std::vector<Frame>& out) {
+  out.clear();
+  if (!angry) {   // shy -> heart eyes (bounce) -> wink -> back to idle
+    out.push_back(fr(350, "shy", {fa(Ex::Shy)}));
+    out.push_back(fr(500, "love", {fa(Ex::Love)}));
+    out.push_back(fr(500, "love, hop", {fa(Ex::Love, FaceO().dy(-2))}));
+    out.push_back(fr(500, "love", {fa(Ex::Love)}));
+    out.push_back(fr(120, "blink", {fa(Ex::Love, FaceO().E(SHUT))}));
+    out.push_back(fr(500, "wink", {fa(Ex::Wink)}));
+    out.push_back(fr(300, "", {I()}));
+  } else {        // a frown, then steaming and shaking with anger, then it passes
+    out.push_back(fr(300, "frown", {fa(Ex::Determined, FaceO().dy(1))}));
+    out.push_back(fr(500, "grumpy", {fa(Ex::Grumpy)}));
+    for (int i = 0; i < 3; i++) {
+      out.push_back(fr(90, "shake", {fa(Ex::Grumpy, FaceO().dx(2))}));
+      out.push_back(fr(90, "shake", {fa(Ex::Grumpy, FaceO().dx(-2))}));
+    }
+    out.push_back(fr(700, "grumpy", {fa(Ex::Grumpy)}));
+    out.push_back(fr(500, "sulk", {fa(Ex::Unimpressed)}));
+    out.push_back(fr(300, "", {I()}));
+  }
+}
 
 void buildLive(const View& v, LiveClip& out) {
   out.frames.clear();
   out.loop = true;
   switch (v.clip) {
     case UClip::TimeBoard: timeBoard(out, v); break;
-    case UClip::Menu: menu(out, v); break;
-    case UClip::MenuSwap: menuSwap(out, v); break;
+    case UClip::Menu: if (v.touchOnly) menuList(out, v); else menu(out, v); break;
+    case UClip::MenuSwap: if (v.touchOnly) menuListSwap(out, v); else menuSwap(out, v); break;
     case UClip::SetAlarm: setAlarm(out, v); break;
     case UClip::SetAlarmTilt: setAlarmTilt(out, v); break;
     case UClip::SetAlarmDone: setAlarmDone(out, v); break;
@@ -281,6 +419,10 @@ void buildLive(const View& v, LiveClip& out) {
     case UClip::WifiPair: wifiPair(out, v); break;
     case UClip::WifiDone: wifiDone(out, v); break;
     case UClip::WifiFail: wifiFail(out); break;
+    case UClip::FacePick: facePick(out, v); break;
+    case UClip::FacePickTilt: facePickTilt(out, v); break;
+    case UClip::FaceConfirm: faceConfirm(out, v); break;
+    case UClip::FaceDone: faceDone(out, v); break;
     case UClip::Home: default:  // the home screen belongs to the life module (HomeScene::buildHome); a plain idle face as the fallback
       out.frames.push_back(fr(2400, "", {I()}));
       out.frames.push_back(fr(60, "", {I(FaceO().E(HALF))}));

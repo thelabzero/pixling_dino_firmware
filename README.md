@@ -13,7 +13,7 @@ No camera, no microphone, no cloud. The only network use is a daily Wi-Fi time s
 | **Status and known gaps** | [`docs/checkpoints.md`](docs/checkpoints.md) |
 | **Contributing** | [`CLAUDE.md`](CLAUDE.md), [`firmware/README.md`](firmware/README.md), decisions in [`docs/decisions/`](docs/decisions/) |
 | **Design source** | `art/reference/dino-v1/` (the sheet; the firmware ports its Face, Life and Utility groups) |
-| **Firmware** | 0.3.1. Face, life, clock, alarm, focus, stopwatch, boot film and soak log have run on the board. **Wi-Fi setup is code-complete but not yet run on the board** ([checklist](docs/wifi-setup-checklist.md)) |
+| **Firmware** | 0.4.0, in four editions ([section 2](#2-quick-start)). Face, life, clock, alarm, focus, stopwatch, boot film and soak log have run on the board. **Not yet run on the board:** Wi-Fi setup ([checklist](docs/wifi-setup-checklist.md)), power saving ([checklist](docs/power-checklist.md)), the wedge-eye face, the default-face picker and **touch-only mode** ([checklist](docs/touch-only-checklist.md)) |
 
 **On this page:** [Parts](#1-parts-and-wiring) · [Quick start](#2-quick-start) · [Wi-Fi](#3-connect-to-wi-fi) · [First run](#4-first-run) · [Controls](#5-controls) · [Tuning](#6-tuning-and-calibration) · [Tools](#7-tools-and-checks) · [Troubleshooting](#8-troubleshooting) · [Known gaps](#9-known-gaps)
 
@@ -25,8 +25,8 @@ No camera, no microphone, no cloud. The only network use is a daily Wi-Fi time s
 |---|---|---|
 | ESP32-C3 SuperMini | Runs the firmware | |
 | SSD1306 0.96" OLED, 128x64 | I2C, address 0x3C | SDA 8, SCL 9 |
-| MPU6050 IMU | I2C, address 0x68. Tilt, flip, shake, pick up | same SDA / SCL |
-| TTP223 touch module (HW-763) | Tap, double tap, long press, hold | GPIO 4 |
+| MPU6050 IMU | I2C, address 0x68. Tilt, flip, shake, pick up. Not needed in the touch-only editions | same SDA / SCL |
+| TTP223 touch module (HW-763) | Tap, double tap, long press, hold (touch-only: up to 4 taps, long tap) | GPIO 4 |
 | Passive piezo buzzer | Sounds. Via about 100 Ohm to GND | GPIO 10 |
 | Li-ion cell + two 330 kOhm resistors | Optional. Battery reading through a divider | GPIO 3 (divider middle) |
 | USB-C **data** cable | A charge-only cable will not work | |
@@ -46,6 +46,15 @@ python3 -m venv .venv
 .venv/bin/pio run -e dino_c3 -t upload && .venv/bin/pio device monitor -e dino_c3
 ```
 
+**Pick your edition** (same logic, same modules; only the face and how you control it differ). Use the env name in the commands above:
+
+| Env | Face | Controls |
+|---|---|---|
+| `dino_c3` (default) | Classic slab eyes | Tilt (IMU) and touch |
+| `dino_wedge_c3` | Wedge eyes (new-eyes page D) | Tilt and touch |
+| `dino_touch_c3` | Classic | **Touch only**, no IMU needed |
+| `dino_touch_wedge_c3` | Wedge | **Touch only**, no IMU needed |
+
 The monitor runs at 115200 baud; add `-f time` for time stamps. Prefer VS Code? Install the **PlatformIO IDE** extension, open `firmware/` and use the toolbar.
 
 <details>
@@ -60,13 +69,13 @@ The clock and alarms need the real time, fetched over Wi-Fi at start and then on
 
 Set it up on the dino with your phone, no app and no rebuild:
 
-1. **Long press** the pad, **tilt** to the **Wi-Fi** card, **tap**.
+1. **Long press** the pad, **tilt** to the **Wi-Fi** card, **tap**. (Touch-only editions: long press, **tap** until the **Wi-Fi** row is marked, **long tap**.)
 2. The dino shows a network name (`DINO-1234`) and a password (`XXXXX XXXXX`).
 3. On your phone, join that network with that password. A page **Connect your Dino** opens by itself (or go to `http://192.168.4.1`).
 4. Pick your home Wi-Fi, enter its password, tap **Connect**.
 5. The dino shows **CONNECTED** with a heart, then the time. Your Wi-Fi is saved.
 
-**Long press** cancels at any time. Nobody finishes within 5 minutes: it gives up. A wrong password gives a sad dino and the pairing screen returns. An alarm that comes due always wins.
+**Long press** cancels at any time (touch-only: long tap). Nobody finishes within 5 minutes: it gives up. A wrong password gives a sad dino and the pairing screen returns. An alarm that comes due always wins.
 
 <details>
 <summary>Security, developer shortcut, time zone</summary>
@@ -90,9 +99,9 @@ Every power-on plays the **boot film** (about 5 s): the name Pixling writes itse
 | Monitor lists each module and whether it was found | A missing module is skipped, the dino keeps running |
 | Boot film, then Dino's face | Check SDA 8 / SCL 9 and address 0x3C |
 | A tap on the pad gets a reaction | Check GPIO 4 and `TOUCH_ACTIVE_HIGH` |
-| Tilting moves the menu | Check IMU wiring, then [calibrate](#6-tuning-and-calibration) |
+| Tilting moves the menu (touch-only editions: tapping does) | Check IMU wiring, then [calibrate](#6-tuning-and-calibration) |
 | Sounds on touch, menu and alarm | Check GPIO 10 and `BUZZER_VOLUME` |
-| Menu has 6 cards: Clock, Alarm, Focus, Stopwatch, **Wi-Fi**, Back | Rebuild and upload the current firmware |
+| Menu has 7 cards: Clock, Alarm, Focus, Stopwatch, Wi-Fi, **Face**, Back (touch-only: a list, 3 rows at a time) | Rebuild and upload the current firmware |
 | Right time on the Clock card | Not connected yet ([section 3](#3-connect-to-wi-fi)), 5 GHz network, or `TIME_TZ` |
 
 **No touch pad yet?** Drive everything from the monitor: `t` tap, `d` double tap, `l` long press, `h` hold, `,` `.` tilt, `f` `u` flip, `a` alarm at the next minute (quick end-to-end alarm test), `i` status, `?` all keys.
@@ -118,7 +127,21 @@ Every power-on plays the **boot film** (about 5 s): the name Pixling writes itse
 | Shake, pick up | The dino reacts |
 | Left alone 5 min | The dino falls asleep and the screen dims. Any touch wakes it |
 
-Set alarm starts at the current time: tilt = hour, tap, tilt = minutes (5-minute steps), tap = save. Focus offers 25, 45 or 60 minutes, then a 5-minute break. More in the [live guide](https://thelabzero.github.io/pixling-dino-guide/).
+Set alarm starts at the current time: tilt = hour, tap, tilt = minutes (5-minute steps), tap = save. Focus offers 25, 45 or 60 minutes, then a 5-minute break. **Menu > Clock** turns the big clock (bottom-right of the home screen) on and off; **Menu > Face** picks dino's default face. More in the [live guide](https://thelabzero.github.io/pixling-dino-guide/).
+
+### Touch-only editions (`dino_touch_c3`, `dino_touch_wedge_c3`)
+
+For a dino without an IMU, or just without tilting. Two gestures do everything ([ADR 012](docs/decisions/012-touch-only-mode.md)):
+
+| Do | What happens |
+|---|---|
+| **Tap** | Next item in every list and picker. Snoozes a ringing alarm |
+| **Long tap** (0.7 s or more, acts when you let go) | Select. Opens the menu from the home screen. Dismisses a ringing alarm. Leaves Wi-Fi setup, focus and the stopwatch |
+| 2 taps on the home screen | Time board |
+| 3 taps | A cute face (shy, heart eyes, wink) |
+| 4 taps | An angry face (steaming, shaking) |
+
+The menu is a zoomed list, **3 rows at a time** with a scroll effect and a bar on the right edge. **Alarm** has a third step after hours and minutes: tap flips **ON / OFF**, long tap confirms. In the default-face warning a long tap means yes and a tap means no. Taps are counted on the home screen only, so a single tap there answers about 0.35 s later; in menus every tap acts at once. There is no hold and no tilt in this mode.
 
 ## 6. Tuning and calibration
 
@@ -138,9 +161,9 @@ Close the monitor, open `tools/imu_calibrator/imu_calibrator.html` in Chrome or 
 
 | Env | Checks |
 |---|---|
-| `play_dino` | Every dino clip in a loop, with render time |
+| `play_dino`, `play_dino_wedge` | Every dino clip in a loop, with render time (classic / wedge face) |
 | `play_inputs` | I2C scan and live gesture counters |
-| `play_boot` | The three boot films |
+| `play_boot`, `play_boot_wedge` | The three boot films |
 | `play_shard` | The shard-face expressions (experiment) |
 
 **Soak log** (battery tests and long runs). The dino keeps its own log in flash: a health sample a minute (battery, memory, loop timing, Wi-Fi) and events (boots with reset reason, low battery, stalls). It survives resets and a dead battery. Monitor: `w` prints it, `x` twice erases it.
@@ -155,10 +178,11 @@ Procedure: [`docs/soak-checklist.md`](docs/soak-checklist.md), design: [ADR 007]
 **Before you push code** (from the repo root):
 
 ```bash
-cd firmware && .venv/bin/pio test -e native && cd ..   # 120 desktop unit tests
+cd firmware && .venv/bin/pio test -e native && cd ..   # 164 desktop unit tests
 python3 tools/face_check.py                            # every frame matches the design
+python3 tools/face_check_wedge.py                      # same for the wedge-eye face
 node tools/imu_calibrator/test_page.js                 # calibrator page test
-cd firmware && .venv/bin/pio run -e dino_c3            # chip build
+cd firmware && .venv/bin/pio run -e dino_c3 -e dino_wedge_c3 -e dino_touch_c3 -e dino_touch_wedge_c3   # chip builds
 ```
 
 ## 8. Troubleshooting
@@ -182,8 +206,9 @@ cd firmware && .venv/bin/pio run -e dino_c3            # chip build
 ## 9. Known gaps
 
 - Petting is a short tap; a firm double tap for RAWR is not wired.
+- **Touch-only editions** ([checklist](docs/touch-only-checklist.md), not yet run on the board): the focus picker has no Back row (it gives up after 10 s), set-alarm hours can take up to 23 taps, and cute / angry (3 and 4 taps) exist on the home screen only. There is no pick-up or shake reaction without the IMU.
 - A held tilt can replay the tilt clip every 4 s. The shake threshold (1.7 g) needs tuning on the board.
-- Games and Friends (design groups G and F) are not built. The menu has 6 slots.
+- Games and Friends (design groups G and F) are not built. The menu has 7 slots.
 - **Wi-Fi setup has not been run on the board** ([checklist](docs/wifi-setup-checklist.md)). Its screens and icon are drawn in code, not in the design sheet.
 - Open from the first board run ([`docs/d4-board-checklist.md`](docs/d4-board-checklist.md)): alarm hold-dismiss, alarm kept after a reset, how the clips compare with the sheet. The monitor can show a line late (USB serial holds a short last line); the loop is not stalled.
 

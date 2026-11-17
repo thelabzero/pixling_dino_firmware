@@ -194,6 +194,50 @@ void test_every_cue_frame_is_inside_its_act() {
   }
 }
 
+// ---- three taps = cute, four taps = angry (touch-only mode, ADR 012) ----
+void test_three_taps_cute_after_a_pause_then_back_to_idle() {
+  b.onCute(T);
+  TEST_ASSERT_TRUE(act() == Act::Idle);            // noticing first, like a touch
+  run(400);
+  TEST_ASSERT_TRUE(act() == Act::Cute);
+  TEST_ASSERT_FALSE(b.view().loop);
+  finish();
+  TEST_ASSERT_TRUE(act() == Act::Idle);
+}
+
+void test_four_taps_angry() {
+  b.onAngry(T); run(400);
+  TEST_ASSERT_TRUE(act() == Act::Angry);
+  finish();
+  TEST_ASSERT_TRUE(act() == Act::Idle);
+}
+
+void test_cute_and_angry_do_not_count_as_petting_and_wait_for_a_playing_clip() {
+  for (int i = 0; i < 6; i++) { b.onCute(T); run(400); finish(); }   // six in a row: never over-petted
+  TEST_ASSERT_TRUE(act() == Act::Idle);
+  b.onTouch(T); run(400);
+  TEST_ASSERT_TRUE(act() == Act::Pet);             // a normal touch afterwards is still a pet
+  b.onAngry(T); run(400);
+  TEST_ASSERT_TRUE(act() == Act::Pet);             // the pet is not cut short
+}
+
+void test_cute_wakes_a_sleeping_dino_first() {
+  b.onActivity(T); run(300100);
+  if (act() == Act::Rawr) { finish(); run(300000); }
+  finish();
+  TEST_ASSERT_TRUE(act() == Act::Asleep);
+  b.onCute(T); run(400);
+  TEST_ASSERT_TRUE(act() == Act::Wake);
+}
+
+void test_cute_and_angry_have_voices_and_are_not_sheet_clips() {
+  TEST_ASSERT_TRUE(voiceOf(Act::Cute, 0) == Voice::Purr);
+  TEST_ASSERT_TRUE(voiceOf(Act::Cute, 2) == Voice::Trill);
+  TEST_ASSERT_TRUE(voiceOf(Act::Angry, 1) == Voice::Growl);
+  TEST_ASSERT_EQUAL('\0', actDef(Act::Cute).clip[0]);    // drawn by scenes::buildMood
+  TEST_ASSERT_EQUAL('\0', actDef(Act::Angry).clip[0]);
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_starts_idle_loop_not_dim);
@@ -212,5 +256,10 @@ int main(int, char**) {
   RUN_TEST(test_home_resumed_starts_from_idle);
   RUN_TEST(test_voices_per_clip);
   RUN_TEST(test_every_cue_frame_is_inside_its_act);
+  RUN_TEST(test_three_taps_cute_after_a_pause_then_back_to_idle);
+  RUN_TEST(test_four_taps_angry);
+  RUN_TEST(test_cute_and_angry_do_not_count_as_petting_and_wait_for_a_playing_clip);
+  RUN_TEST(test_cute_wakes_a_sleeping_dino_first);
+  RUN_TEST(test_cute_and_angry_have_voices_and_are_not_sheet_clips);
   return UNITY_END();
 }

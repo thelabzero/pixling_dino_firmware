@@ -11,6 +11,8 @@ enum class Event : uint8_t {
   Tap, DoubleTap, LongPress, Hold,
   // IMU (MPU6050)
   TiltLeft, TiltRight, FlipDown, FlipUp, PickUp, PutDown, Shake,
+  // touch, more taps in a row (only in touch-only mode, ADR 012; added last so the numbers above keep their meaning)
+  TripleTap, QuadTap,
   Count
 };
 
@@ -18,6 +20,8 @@ inline const char* eventName(Event e) {
   switch (e) {
     case Event::Tap: return "TAP";
     case Event::DoubleTap: return "DOUBLE_TAP";
+    case Event::TripleTap: return "TRIPLE_TAP";
+    case Event::QuadTap: return "QUAD_TAP";
     case Event::LongPress: return "LONG_PRESS";
     case Event::Hold: return "HOLD";
     case Event::TiltLeft: return "TILT_LEFT";

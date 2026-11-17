@@ -41,11 +41,28 @@ static const char* const FACE[4][WIN_ROWS] = {
     {"............", "............", "...#....#...", "..#.#..#.#..", "............", "....#..#....", ".....##.....", "............"},  // happy
 };
 
+// Wedge build (dino_wedge_c3): the same four faces drawn as the new-eyes face, so the zoom into Dino's face lands on the live
+// face: flat wedge eyes (outer top corner cut), a small mouth, no nose. Kept apart from FACE: tools/gen_*_art.py read FACE.
+static const char* const FACE_WEDGE[4][WIN_ROWS] = {
+    {"............", "..###..###..", ".####..####.", ".####..####.", "............", "....#..#....", ".....##.....", "............"},  // open
+    {"............", "............", ".####..####.", ".####..####.", "............", "....#..#....", ".....##.....", "............"},  // half
+    {"............", "............", "............", ".####..####.", "............", "....#..#....", ".....##.....", "............"},  // closed
+    {"............", "..##....##..", ".#..#..#..#.", "............", "............", "....####....", ".....##.....", "............"},  // happy
+};
+#ifdef DINO_WEDGE
+#define FACE_SET FACE_WEDGE
+#else
+#define FACE_SET FACE
+#endif
+
 bool dataOk() {
   for (int i = 0; i < DINO_ROWS; i++) if (!DINO[i] || (int)strlen(DINO[i]) != DINO_W) return false;
   for (int i = 0; i < PERSON_ROWS; i++) if (!PERSON[i] || (int)strlen(PERSON[i]) != PERSON_W) return false;
   for (int i = 0; i < WORD_ROWS; i++) if (!WORD[i] || (int)strlen(WORD[i]) != WORD_W) return false;
-  for (int f = 0; f < 4; f++) for (int i = 0; i < WIN_ROWS; i++) if (!FACE[f][i] || (int)strlen(FACE[f][i]) != WIN_W) return false;
+  for (int f = 0; f < 4; f++) for (int i = 0; i < WIN_ROWS; i++) {
+    if (!FACE[f][i] || (int)strlen(FACE[f][i]) != WIN_W) return false;
+    if (!FACE_WEDGE[f][i] || (int)strlen(FACE_WEDGE[f][i]) != WIN_W) return false;
+  }
   return true;
 }
 
@@ -78,7 +95,7 @@ static void drawDino(uint8_t* b, int ox, int oy, int face, int rows, int k) {
   int winRow = 0;
   for (int y = 0; y < DINO_ROWS; y++) if (strchr(DINO[y], 'w')) { winRow = y; break; }
   const int w = (DINO_W + k - 1) / k, h = (DINO_ROWS + k - 1) / k;
-  const char* const* f = FACE[face & 3];
+  const char* const* f = FACE_SET[face & 3];
   for (int ty = 0; ty < h; ty++) {
     if (rows > 0 && ty >= rows) break;
     const int sy = ty * k;
@@ -112,6 +129,7 @@ static void drawWord(uint8_t* b, int cols, int dotMode, int dotUp) {
 }
 
 // A slab eye with stepped corners and a cut-out pupil: the zoomed-in face growing into the live face.
+#ifndef DINO_WEDGE
 static void drawEye(uint8_t* b, int x, int y, int w, int h) {
   for (int r = 0; r < h; r++) {
     const int d = r < h - 1 - r ? r : h - 1 - r;
@@ -121,6 +139,22 @@ static void drawEye(uint8_t* b, int x, int y, int w, int h) {
   const int p = (w * 28 + 50) / 100 < 2 ? 2 : (w * 28 + 50) / 100;
   fillPx(b, x + (w - p + 1) / 2, y + (2 * h - p + 2) / 4, p, p, 0);
 }
+#endif
+
+#ifdef DINO_WEDGE
+// Wedge build: a flat wedge eye (outer top corner cut, no pupil) and the small mouth, so the grow steps end on the live face.
+// side = -1 left eye, +1 right eye (which corner is the outer one).
+static void drawWedgeEye(uint8_t* b, int x, int y, int w, int h, int side) {
+  for (int r = 0; r < h; r++) {
+    const int cut = r < 3 ? 3 - r : 0;
+    fillPx(b, x + (side < 0 ? cut : 0), y + r, w - cut, 1);
+  }
+}
+static void drawWedgeMouth(uint8_t* b) {
+  fillPx(b, 59, 46, 11, 1);
+  px(b, 58, 45); px(b, 70, 45);
+}
+#endif
 
 static void zoomInto(const uint8_t* work, uint8_t* out, int z, int fx, int fy) {
   if (z <= 1) { memcpy(out, work, PIXELS); return; }
@@ -145,8 +179,13 @@ void renderStep(const Step& s, uint8_t* work, uint8_t* out, LiveFaceFn live) {
       drawDino(work, s.ox, s.oy, s.a, s.b, s.c);
       break;
     case Op::Word: drawWord(work, s.a, s.b, s.c); break;
+#ifdef DINO_WEDGE
+    case Op::Eyes1: drawWedgeEye(work, 34, 21, 20, 15, -1); drawWedgeEye(work, 74, 21, 20, 15, 1); drawWedgeMouth(work); break;
+    case Op::Eyes2: drawWedgeEye(work, 33, 19, 22, 17, -1); drawWedgeEye(work, 73, 19, 22, 17, 1); drawWedgeMouth(work); break;
+#else
     case Op::Eyes1: drawEye(work, 32, 20, 16, 16); drawEye(work, 80, 20, 16, 16); break;
     case Op::Eyes2: drawEye(work, 26, 18, 22, 24); drawEye(work, 78, 19, 22, 24); break;
+#endif
     case Op::Live: if (live) live(work, s.a); break;
   }
   zoomInto(work, out, s.z, s.fx, s.fy);
