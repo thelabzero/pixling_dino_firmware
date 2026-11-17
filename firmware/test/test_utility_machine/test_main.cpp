@@ -45,8 +45,8 @@ void test_menu_navigation_and_back() {
   TEST_ASSERT_TRUE(clip() == Clip::MenuSwap); TEST_ASSERT_EQUAL(0, m.view().a); TEST_ASSERT_EQUAL(1, m.view().b);
   done();
   TEST_ASSERT_TRUE(clip() == Clip::Menu); TEST_ASSERT_EQUAL(1, m.view().a);
-  ev(Event::TiltLeft); done(); ev(Event::TiltLeft); done();   // 1 -> 0 -> 5 (wraps to Back)
-  TEST_ASSERT_EQUAL(5, m.view().a);
+  ev(Event::TiltLeft); done(); ev(Event::TiltLeft); done();   // 1 -> 0 -> 6 (wraps to Back)
+  TEST_ASSERT_EQUAL(6, m.view().a);
   ev(Event::Tap);                                              // back
   TEST_ASSERT_TRUE(clip() == Clip::Home);
 }
@@ -342,6 +342,257 @@ void test_alarm_during_wifi_setup_rings_and_closes_the_network() {
   TEST_ASSERT_TRUE(m.takeWifiRequest() == WifiRequest::Cancel);
 }
 
+// ---- default face (menu > Face): pick with tilt, tap = warning, tap again = saved
+static void openFace() { ev(Event::LongPress); for (int i = 0; i < Machine::FACE_SLOT; i++) { ev(Event::TiltRight); done(); } }
+
+void test_face_card_sits_before_back() {
+  ev(Event::LongPress);
+  for (int i = 0; i < Machine::FACE_SLOT; i++) { ev(Event::TiltRight); done(); }
+  TEST_ASSERT_TRUE(clip() == Clip::Menu); TEST_ASSERT_EQUAL(Machine::FACE_SLOT, m.view().a);
+  ev(Event::TiltRight); done();
+  TEST_ASSERT_EQUAL(Machine::MENU_SLOTS - 1, m.view().a);        // Back is still the last card
+}
+
+void test_face_picker_opens_on_the_saved_default_and_tilts_with_wrap() {
+  m.restoreFace(3);
+  openFace(); ev(Event::Tap);
+  TEST_ASSERT_TRUE(clip() == Clip::FacePick); TEST_ASSERT_EQUAL(3, m.view().a); TEST_ASSERT_EQUAL(1, m.view().b);   // b = it is the default
+  ev(Event::TiltRight);
+  TEST_ASSERT_TRUE(clip() == Clip::FacePickTilt); TEST_ASSERT_EQUAL(4, m.view().a);
+  ev(Event::TiltRight);                                           // ignored while the tilt animation plays
+  TEST_ASSERT_EQUAL(4, m.view().a);
+  done();
+  TEST_ASSERT_TRUE(clip() == Clip::FacePick); TEST_ASSERT_EQUAL(4, m.view().a); TEST_ASSERT_EQUAL(0, m.view().b);
+  for (int i = 0; i < Machine::FACE_CHOICES - 1; i++) { ev(Event::TiltLeft); done(); }   // all the way round, back past 0 to 5
+  TEST_ASSERT_EQUAL(5, m.view().a);
+  m.restoreFace(0);
+  ev(Event::LongPress);                                           // leave: nothing saved
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+}
+
+void test_face_needs_a_second_tap_to_become_default() {
+  openFace(); ev(Event::Tap);
+  TEST_ASSERT_EQUAL(0, m.view().a);
+  ev(Event::TiltRight); done(); ev(Event::TiltRight); done();    // face 2
+  drain();
+  ev(Event::Tap);                                                 // 1st tap: the warning
+  TEST_ASSERT_TRUE(clip() == Clip::FaceConfirm); TEST_ASSERT_EQUAL(2, m.view().a);
+  TEST_ASSERT_EQUAL(0, m.defaultFace());                          // not yet
+  TEST_ASSERT_FALSE(m.takeFaceSaveRequest());
+  ev(Event::Tap);                                                 // 2nd tap: fixed
+  TEST_ASSERT_TRUE(clip() == Clip::FaceDone); TEST_ASSERT_EQUAL(2, m.view().a);
+  TEST_ASSERT_EQUAL(2, m.defaultFace());
+  TEST_ASSERT_TRUE(m.takeFaceSaveRequest());
+  TEST_ASSERT_FALSE(m.takeFaceSaveRequest());                     // read once
+  TEST_ASSERT_TRUE(countSound(Sound::AlarmSet) == 1);             // the happy warble
+  ev(Event::Tap);                                                 // taps during the confirmation clip do nothing
+  TEST_ASSERT_TRUE(clip() == Clip::FaceDone);
+  done();
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+}
+
+void test_face_hold_on_the_warning_goes_back_to_the_picker_without_saving() {
+  openFace(); ev(Event::Tap);
+  ev(Event::TiltRight); done();
+  ev(Event::Tap); TEST_ASSERT_TRUE(clip() == Clip::FaceConfirm);
+  ev(Event::Hold);
+  TEST_ASSERT_TRUE(clip() == Clip::FacePick); TEST_ASSERT_EQUAL(1, m.view().a);   // still on the face being looked at
+  TEST_ASSERT_EQUAL(0, m.defaultFace());
+  TEST_ASSERT_FALSE(m.takeFaceSaveRequest());
+  ev(Event::Tap); ev(Event::LongPress);                           // warning again, then back again
+  TEST_ASSERT_TRUE(clip() == Clip::FacePick);
+}
+
+void test_face_tap_on_the_current_default_just_goes_home() {
+  m.restoreFace(4);
+  openFace(); ev(Event::Tap);
+  TEST_ASSERT_EQUAL(4, m.view().a);
+  ev(Event::Tap);
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+  TEST_ASSERT_EQUAL(4, m.defaultFace());
+  TEST_ASSERT_FALSE(m.takeFaceSaveRequest());
+}
+
+void test_face_screens_give_up_when_left_alone_and_save_nothing() {
+  openFace(); ev(Event::Tap); ev(Event::TiltRight); done();
+  run(Settings().menuIdleMs + 500);                               // picker times out like the other menus
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+  openFace(); ev(Event::Tap); ev(Event::TiltRight); done(); ev(Event::Tap);
+  TEST_ASSERT_TRUE(clip() == Clip::FaceConfirm);
+  run(Settings().menuIdleMs + 500);                               // so does the warning
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+  TEST_ASSERT_EQUAL(0, m.defaultFace());
+  TEST_ASSERT_FALSE(m.takeFaceSaveRequest());
+}
+
+void test_face_restore_ignores_nonsense() {
+  m.restoreFace(7); TEST_ASSERT_EQUAL(7, m.defaultFace());
+  m.restoreFace(Machine::FACE_CHOICES); TEST_ASSERT_EQUAL(0, m.defaultFace());    // a value from other firmware: fall back to the classic face
+  m.restoreFace(-1); TEST_ASSERT_EQUAL(0, m.defaultFace());
+  TEST_ASSERT_FALSE(m.takeFaceSaveRequest());                                     // restoring never asks to save
+}
+
+void test_alarm_beats_the_face_picker() {
+  Alarm a; a.enabled = true; a.hour = 7; a.minute = 30; m.setAlarm(a);
+  at(7, 29, 59); run(100);
+  openFace(); ev(Event::Tap);
+  TEST_ASSERT_TRUE(clip() == Clip::FacePick);
+  at(7, 30, 0); run(200);
+  TEST_ASSERT_TRUE(clip() == Clip::AlarmRing);                    // utility is exact: the picker never delays an alarm
+}
+
+// ---- touch-only mode (ADR 012): tap = next, long press / hold = select, the menu is a list ----
+static void touchOnly() { Settings s; s.touchOnly = true; m = Machine(); m.configure(s); Alarm a; m.begin(a, T); }
+static void openMenu() { ev(Event::LongPress); }
+static void settle() { if (clip() == Clip::MenuSwap) done(); }   // let a list scroll finish
+
+void test_touch_menu_is_a_list_tap_moves_long_press_selects() {
+  touchOnly(); at(10, 18); run(200);
+  openMenu();
+  TEST_ASSERT_TRUE(clip() == Clip::Menu); TEST_ASSERT_EQUAL(0, m.view().a); TEST_ASSERT_TRUE(m.view().touchOnly);
+  ev(Event::Tap);                                          // the list scrolls to row 1
+  TEST_ASSERT_TRUE(clip() == Clip::MenuSwap); TEST_ASSERT_EQUAL(0, m.view().a); TEST_ASSERT_EQUAL(1, m.view().b);
+  done();
+  TEST_ASSERT_TRUE(clip() == Clip::Menu); TEST_ASSERT_EQUAL(1, m.view().a);
+  for (int i = 0; i < 6; i++) ev(Event::Tap);              // quick taps, no waiting: 1 -> 7 wraps to row 0
+  settle();
+  TEST_ASSERT_TRUE(clip() == Clip::Menu); TEST_ASSERT_EQUAL(0, m.view().a);
+  TEST_ASSERT_FALSE(m.view().clockMode);
+  ev(Event::LongPress);                                    // row 0 = clock mode on
+  TEST_ASSERT_TRUE(clip() == Clip::Home); TEST_ASSERT_TRUE(m.view().clockMode);
+}
+
+void test_touch_hold_selects_like_a_long_press() {
+  touchOnly(); at(10, 18); run(200);
+  openMenu(); ev(Event::Tap); ev(Event::Tap); ev(Event::Tap);   // row 3 = stopwatch
+  ev(Event::Hold);
+  TEST_ASSERT_TRUE(clip() == Clip::Stopwatch);
+  ev(Event::Hold);                                         // leaves, like a long press
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+}
+
+void test_touch_menu_back_row_and_alarm_note() {
+  touchOnly(); at(10, 18); run(200);
+  openMenu();
+  TEST_ASSERT_TRUE(strcmp(m.view().note, "OFF") == 0);     // the Alarm row says OFF while no alarm is set
+  m.setAlarm(Alarm{true, 7, 30}); ev(Event::Tap); ev(Event::Tap); ev(Event::Tap);  // any input refreshes the texts
+  for (int i = 0; i < 3; i++) ev(Event::Tap);              // row 6 = Back
+  settle();
+  TEST_ASSERT_EQUAL(6, m.view().a);
+  TEST_ASSERT_TRUE(strcmp(m.view().note, "07:30") == 0);
+  ev(Event::LongPress);
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+}
+
+void test_touch_menu_times_out() {
+  touchOnly(); at(10, 18); run(200);
+  openMenu();
+  run(Settings().menuIdleMs + 500);
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+}
+
+void test_touch_set_alarm_hours_minutes_then_on() {
+  touchOnly(); at(10, 18); run(200);
+  openMenu(); ev(Event::Tap);                              // row 1 = alarm
+  ev(Event::LongPress);
+  TEST_ASSERT_TRUE(clip() == Clip::SetAlarm); TEST_ASSERT_EQUAL(0, m.view().a);
+  ev(Event::Tap); done();                                  // hours +1 -> 11
+  TEST_ASSERT_TRUE(strcmp(m.view().text, "11:18") == 0);
+  ev(Event::LongPress);                                    // to minutes
+  TEST_ASSERT_EQUAL(1, m.view().a);
+  ev(Event::Tap); done();                                  // 18 snaps to 20
+  TEST_ASSERT_TRUE(strcmp(m.view().text, "11:20") == 0);
+  ev(Event::LongPress);                                    // to the on / off step
+  TEST_ASSERT_TRUE(clip() == Clip::SetAlarm); TEST_ASSERT_EQUAL(2, m.view().a); TEST_ASSERT_EQUAL(1, m.view().b);
+  TEST_ASSERT_FALSE(m.alarm().enabled);                    // nothing is saved before the last step
+  ev(Event::LongPress);                                    // confirm: on
+  TEST_ASSERT_TRUE(clip() == Clip::SetAlarmDone);
+  TEST_ASSERT_TRUE(m.alarm().enabled); TEST_ASSERT_EQUAL(11, m.alarm().hour); TEST_ASSERT_EQUAL(20, m.alarm().minute);
+  TEST_ASSERT_TRUE(m.takeSaveRequest());
+}
+
+void test_touch_set_alarm_off_step_turns_the_alarm_off() {
+  touchOnly(); at(10, 18); run(200);
+  m.setAlarm(Alarm{true, 7, 30});
+  openMenu(); ev(Event::Tap); ev(Event::LongPress);
+  ev(Event::LongPress); ev(Event::LongPress);              // hours -> minutes -> on / off
+  TEST_ASSERT_EQUAL(2, m.view().a);
+  ev(Event::Tap);                                          // flip to OFF
+  TEST_ASSERT_EQUAL(0, m.view().b);
+  drain();
+  ev(Event::LongPress);
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+  TEST_ASSERT_FALSE(m.alarm().enabled);
+  TEST_ASSERT_TRUE(m.takeSaveRequest());
+  TEST_ASSERT_EQUAL(1, countSound(Sound::AlarmOff));
+}
+
+void test_touch_alarm_tap_snoozes_long_press_dismisses() {
+  touchOnly(); at(7, 29, 59); run(200);
+  m.setAlarm(Alarm{true, 7, 30});
+  at(7, 30); run(200);
+  TEST_ASSERT_TRUE(clip() == Clip::AlarmRing);
+  ev(Event::Tap);
+  TEST_ASSERT_TRUE(clip() == Clip::Snooze); TEST_ASSERT_TRUE(m.snoozed());
+  done(); run(Settings().snoozeMs + 500);
+  TEST_ASSERT_TRUE(clip() == Clip::AlarmRing);
+  ev(Event::LongPress);
+  TEST_ASSERT_TRUE(clip() == Clip::Dismiss); TEST_ASSERT_FALSE(m.snoozed());
+}
+
+void test_touch_face_picker_tap_next_long_press_warning_swaps_keys() {
+  touchOnly(); at(10, 18); run(200);
+  openMenu();
+  for (int i = 0; i < 5; i++) ev(Event::Tap);              // row 5 = face
+  ev(Event::LongPress);
+  TEST_ASSERT_TRUE(clip() == Clip::FacePick); TEST_ASSERT_EQUAL(0, m.view().a);
+  ev(Event::Tap); done();                                  // next face
+  TEST_ASSERT_EQUAL(1, m.view().a);
+  ev(Event::LongPress);                                    // choose -> the warning
+  TEST_ASSERT_TRUE(clip() == Clip::FaceConfirm);
+  ev(Event::Tap);                                          // tap = no: back to the picker, nothing saved
+  TEST_ASSERT_TRUE(clip() == Clip::FacePick); TEST_ASSERT_FALSE(m.takeFaceSaveRequest());
+  ev(Event::LongPress);
+  ev(Event::LongPress);                                    // long press = yes: saved
+  TEST_ASSERT_TRUE(clip() == Clip::FaceDone);
+  TEST_ASSERT_EQUAL(1, m.defaultFace()); TEST_ASSERT_TRUE(m.takeFaceSaveRequest());
+}
+
+void test_touch_focus_pick_cycles_and_starts() {
+  touchOnly(); at(10, 18); run(200);
+  openMenu(); ev(Event::Tap); ev(Event::Tap);              // row 2 = focus
+  ev(Event::LongPress);
+  TEST_ASSERT_TRUE(clip() == Clip::FocusPick); TEST_ASSERT_EQUAL(25, m.view().a);
+  ev(Event::Tap); done();
+  TEST_ASSERT_EQUAL(45, m.view().a);
+  ev(Event::LongPress);
+  TEST_ASSERT_TRUE(clip() == Clip::FocusStart);
+}
+
+void test_touch_only_off_changes_nothing() {               // the normal mode keeps tap = select, hold = alarm off
+  at(10, 18); run(200);
+  ev(Event::LongPress);
+  TEST_ASSERT_FALSE(m.view().touchOnly);
+  ev(Event::Tap);                                          // tap selects row 0: clock mode on
+  TEST_ASSERT_TRUE(clip() == Clip::Home); TEST_ASSERT_TRUE(m.view().clockMode);
+}
+
+void test_touch_a_long_press_while_the_list_scrolls_picks_the_row_it_scrolls_to() {
+  touchOnly(); at(10, 18); run(200);
+  openMenu(); ev(Event::Tap); ev(Event::Tap); ev(Event::Tap);   // heading for row 3 (stopwatch), still scrolling
+  TEST_ASSERT_TRUE(clip() == Clip::MenuSwap);
+  ev(Event::LongPress);
+  TEST_ASSERT_TRUE(clip() == Clip::Stopwatch);
+}
+
+void test_touch_multi_taps_are_ignored_by_the_brain_except_two_taps_show_the_time() {
+  touchOnly(); at(10, 24); run(200);
+  ev(Event::TripleTap); ev(Event::QuadTap);                // the life brain answers these, not the utility brain
+  TEST_ASSERT_TRUE(clip() == Clip::Home);
+  ev(Event::DoubleTap);
+  TEST_ASSERT_TRUE(clip() == Clip::TimeBoard);
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_home_shows_dashes_until_synced);
@@ -361,6 +612,14 @@ int main(int, char**) {
   RUN_TEST(test_focus_pick_work_done_break);
   RUN_TEST(test_alarm_during_focus_resumes_focus);
   RUN_TEST(test_stopwatch_counts_pauses_and_taps);
+  RUN_TEST(test_face_card_sits_before_back);
+  RUN_TEST(test_face_picker_opens_on_the_saved_default_and_tilts_with_wrap);
+  RUN_TEST(test_face_needs_a_second_tap_to_become_default);
+  RUN_TEST(test_face_hold_on_the_warning_goes_back_to_the_picker_without_saving);
+  RUN_TEST(test_face_tap_on_the_current_default_just_goes_home);
+  RUN_TEST(test_face_screens_give_up_when_left_alone_and_save_nothing);
+  RUN_TEST(test_face_restore_ignores_nonsense);
+  RUN_TEST(test_alarm_beats_the_face_picker);
   RUN_TEST(test_wifi_menu_slot_starts_pairing);
   RUN_TEST(test_wifi_pairing_phases_follow_the_session);
   RUN_TEST(test_wifi_connected_plays_happy_clip_with_time_then_home);
@@ -371,5 +630,17 @@ int main(int, char**) {
   RUN_TEST(test_wifi_timeout_during_sad_clip_goes_home_after_it);
   RUN_TEST(test_wifi_news_is_ignored_when_not_pairing);
   RUN_TEST(test_alarm_during_wifi_setup_rings_and_closes_the_network);
+  RUN_TEST(test_touch_menu_is_a_list_tap_moves_long_press_selects);
+  RUN_TEST(test_touch_hold_selects_like_a_long_press);
+  RUN_TEST(test_touch_menu_back_row_and_alarm_note);
+  RUN_TEST(test_touch_menu_times_out);
+  RUN_TEST(test_touch_set_alarm_hours_minutes_then_on);
+  RUN_TEST(test_touch_set_alarm_off_step_turns_the_alarm_off);
+  RUN_TEST(test_touch_alarm_tap_snoozes_long_press_dismisses);
+  RUN_TEST(test_touch_face_picker_tap_next_long_press_warning_swaps_keys);
+  RUN_TEST(test_touch_focus_pick_cycles_and_starts);
+  RUN_TEST(test_touch_only_off_changes_nothing);
+  RUN_TEST(test_touch_a_long_press_while_the_list_scrolls_picks_the_row_it_scrolls_to);
+  RUN_TEST(test_touch_multi_taps_are_ignored_by_the_brain_except_two_taps_show_the_time);
   return UNITY_END();
 }

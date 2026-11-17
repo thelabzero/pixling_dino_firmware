@@ -4,6 +4,7 @@
 #include "config.h"
 #include "../app/app.h"
 #include "../scenes/dino_clips.h"
+#include "../scenes/dino_live.h"
 
 bool Life::begin(App& app) {
   life::Settings s;
@@ -52,6 +53,8 @@ void Life::onInput(App& app, input::Event e) {
   if (!home) { brain_.onActivity(now); return; }
   switch (e) {
     case input::Event::Tap: brain_.onTouch(now); break;
+    case input::Event::TripleTap: brain_.onCute(now); break;
+    case input::Event::QuadTap: brain_.onAngry(now); break;
     case input::Event::Shake: brain_.onShake(now); break;
     case input::Event::PickUp: brain_.onPickUp(now); break;
     case input::Event::TiltLeft:
@@ -68,11 +71,14 @@ void Life::buildHome(const utility::View&, scenes::LiveClip& out) const {
   const life::View& v = brain_.view();
   const life::ActDef& d = life::actDef(v.act);
   std::vector<scenes::Clip> built;
-  scenes::buildDino(built, "00:00", "", d.clip);  // one clip only
+  std::vector<scenes::Frame> mood;
+  if (d.clip[0]) scenes::buildDino(built, "00:00", "", d.clip);  // one clip only
+  else scenes::buildMood(v.act == life::Act::Angry, mood);        // the cute and angry reactions are not sheet clips
   out.frames.clear();
   out.loop = v.loop;
-  if (built.empty()) return;
-  std::vector<scenes::Frame>& f = built[0].frames;
+  if (d.clip[0] && built.empty()) return;
+  std::vector<scenes::Frame>& f = d.clip[0] ? built[0].frames : mood;
+  if (f.empty()) return;
   const size_t last = d.last < f.size() ? d.last : f.size() - 1;
   // Voices: when each cue frame starts, counted from when this clip was built.
   clipAt_ = millis();

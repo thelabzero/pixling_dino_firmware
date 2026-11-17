@@ -10,6 +10,7 @@ bool TouchInput::begin(App&) {
   c.doubleGapMs = TOUCH_DOUBLE_GAP_MS;
   c.longMs = TOUCH_LONG_MS;
   c.holdMs = TOUCH_HOLD_MS;
+  c.maxTaps = TOUCH_MAX_TAPS;
   gestures_.setConfig(c);
   Serial.printf("[touch] pad on GPIO%d, %s now\n", PIN_TOUCH, read() ? "TOUCHED" : "not touched");
   return true;  // a digital pin cannot tell whether a pad is connected: check with "i" or LOG_TOUCH_RAW
@@ -27,6 +28,10 @@ void TouchInput::loop(App& app, uint32_t now) {
     else Serial.printf("[touch] up after %lu ms\n", (unsigned long)(now - downAt_));
 #endif
   }
+#if TOUCH_ONLY
+  // Taps are counted (2 = time, 3 = cute, 4 = angry) only on the home screen; everywhere else a tap acts at once.
+  gestures_.setGapMs(app.machine().view().clip == utility::Clip::Home ? TOUCH_MULTI_GAP_MS : TOUCH_DOUBLE_GAP_MS);
+#endif
   gestures_.update(p, now);
   for (input::Event e; (e = gestures_.next()) != input::Event::None;) app.emit(e);
 }

@@ -16,9 +16,9 @@ namespace utility {
 enum class Clip : uint8_t {
   Home,            // the dino idles; with clock mode on, time top-right (+ burn-in shift)
   TimeBoard,       // once: board with the time, then back
-  Menu,            // loop: the menu shows card `a` (0 clock, 1 alarm, 2 focus, 3 stopwatch, 4 wifi, 5 back)
-  MenuSwap,        // once: card `a` slides away, card `b` pops up
-  SetAlarm,        // loop: board HH:MM, field `a` (0 hours, 1 minutes) blinking
+  Menu,            // loop: the menu shows card `a` (touch-only mode: a list with row `a` marked; note = the alarm time or OFF) (0 clock, 1 alarm, 2 focus, 3 stopwatch, 4 wifi, 5 face, 6 back)
+  MenuSwap,        // once: card `a` slides away, card `b` pops up (touch-only: the list scrolls from row `a` to row `b`)
+  SetAlarm,        // loop: board HH:MM, field `a` (0 hours, 1 minutes) blinking; a = 2 (touch-only): "alarm on / off" choice, b = 1 on
   SetAlarmTilt,    // once: value changed (ear flick + arrow)
   SetAlarmDone,    // once: confirmed (hop, happy, heart)
   AlarmRing,       // loop: stage `a` (1, 2, 3)
@@ -36,6 +36,10 @@ enum class Clip : uint8_t {
                    //       ssid / code = the setup network's name and password
   WifiDone,        // once: connected (happy; text = the time if it is known)
   WifiFail,        // once: did not connect (sad), then back to WifiPair
+  FacePick,        // loop: the default-face picker shows face `a` (0..FACE_CHOICES-1); `b` = 1 if it is already the saved default
+  FacePickTilt,    // once: tilted to face `a` (b = direction)
+  FaceConfirm,     // loop: "make this your default?" for face `a`; tap again = saved, hold = back to the picker
+  FaceDone,        // once: saved (happy), then home with the new default face
 };
 
 // What the Wi-Fi setup session (src/wifi/wifi_setup.*) tells the brain while "connect your dino" is open.
@@ -57,6 +61,7 @@ struct View {
   char note[8] = "";        // SetAlarmDone: time until the alarm rings, "+HH:MM" ("" if unknown)
   bool clockMode = false;   // Home: show the time
   uint8_t shift = 0;        // burn-in position 0..8 (3 min each) for long-running screens
+  bool touchOnly = false;   // touch-only mode (ADR 012): the menu is a list and the hints speak of taps, not tilts
   bool night = true;        // alarm screens: window shows night (18:00-06:00) or day
   char ssid[12] = "";       // WifiPair: the setup network's name ("DINO-1234")
   char code[12] = "";       // WifiPair: its password, 10 letters and digits
@@ -86,6 +91,8 @@ struct Settings {
   int alarmMinuteStep = 5;              // set alarm: one minute tilt = this many minutes
   static const int MAX_FOCUS = 4;
   int focusMinutes[MAX_FOCUS] = {25, 45, 60, 0};  // focus lengths offered (0 = unused slot)
+  // Touch-only mode (ADR 012): no IMU. Tap = next, long press (or hold) = select, in every list and picker.
+  bool touchOnly = false;
 };
 
 class Machine {
@@ -99,7 +106,9 @@ class Machine {
   void onWifi(WifiEvent e, uint32_t nowMs);      // the Wi-Fi setup session says what is happening
   void setWifiInfo(const char* ssid, const char* code);  // the setup network's name and password, to show
   WifiRequest takeWifiRequest() { WifiRequest r = wifiReq_; wifiReq_ = WifiRequest::None; return r; }
-  static const int MENU_SLOTS = 6;               // clock, alarm, focus, stopwatch, wifi, back
+  static const int MENU_SLOTS = 7;               // clock, alarm, focus, stopwatch, wifi, face, back
+  static const int FACE_SLOT = 5;                // the menu card that opens the default-face picker
+  static const int FACE_CHOICES = 10;            // faces on offer (the table is scenes::FACE_CHOICES; a static_assert keeps them equal)
   void setAlarm(const Alarm& a) { alarm_ = a; firedMinute_ = -1; snoozeUntilMs_ = 0; }  // e.g. a test or the app
 
   const View& view() const { return view_; }
@@ -107,6 +116,9 @@ class Machine {
   int minutesUntilAlarm() const;  // 0..1439 (rounded up), or -1 if the alarm is off or the time unknown
   bool snoozed() const { return snoozeUntilMs_ != 0; }
   Sound nextSound();
+  int defaultFace() const { return defaultFace_; }            // index of the saved default face (0 = the classic idle face)
+  void restoreFace(int i) { defaultFace_ = (i >= 0 && i < FACE_CHOICES) ? i : 0; }  // at start-up: set it without asking to save
+  bool takeFaceSaveRequest() { bool r = faceSave_; faceSave_ = false; return r; }
   bool takeSaveRequest() { bool r = save_; save_ = false; return r; }
   const char* stateName() const;
   uint8_t stateCode() const { return (uint8_t)state_; }  // for the soak log
@@ -115,8 +127,10 @@ class Machine {
  private:
   enum class State : uint8_t { Home, TimeBoard, Menu, MenuSwap, SetAlarm, SetAlarmDone, Ringing, Snooze, Dismiss,
                                FocusPick, FocusStart, FocusWork, FocusDone, Break, Stopwatch,
-                               WifiSetup, WifiResult };
+                               WifiSetup, WifiResult,
+                               FacePick, FaceConfirm, FaceDone };  // new states go last: the soak log stores the numbers
   void handle(input::Event e, uint32_t now);
+  input::Event translate(input::Event e) const;  // touch-only mode: tap / long press -> the events the lists understand
   void clipDone(uint32_t now);
   void show(Clip c, int a = 0, int b = 0);
   void setText(const char* t);
@@ -139,7 +153,8 @@ class Machine {
   // menu
   int menu_ = 0, menuNext_ = 0;
   // set alarm
-  int field_ = 0;
+  int field_ = 0;           // 0 hours, 1 minutes, 2 on/off (touch-only mode only)
+  bool alarmOn_ = true;     // touch-only: the on/off step's choice
   Alarm editing_;
   // ringing
   uint32_t ringStartMs_ = 0, snoozeUntilMs_ = 0;
@@ -153,6 +168,9 @@ class Machine {
   bool stopwatchRunning_ = false;
   uint32_t swStartMs_ = 0, swPausedMs_ = 0;
   int swLastMinute_ = 0;
+  // default face
+  int defaultFace_ = 0, faceSel_ = 0;
+  bool faceSave_ = false;
   // wifi setup
   bool wifiPhone_ = false, wifiTimedOut_ = false;
   WifiRequest wifiReq_ = WifiRequest::None;

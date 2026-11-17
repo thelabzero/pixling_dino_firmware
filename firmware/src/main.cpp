@@ -21,6 +21,9 @@ SET_LOOP_TASK_STACK_SIZE(16 * 1024);
 #if FEATURE_ALARM_STORE
 #include "modules/alarm_store.h"
 #endif
+#if FEATURE_FACE_STORE
+#include "modules/face_store.h"
+#endif
 #if FEATURE_WIFI_TIME
 #include "modules/wifi_clock.h"
 #endif
@@ -59,6 +62,7 @@ static utility::Settings settingsFromConfig() {
   s.menuIdleMs = (uint32_t)MENU_IDLE_S * 1000UL;
   s.burnInShiftMs = (uint32_t)BURN_IN_SHIFT_MIN * 60000UL;
   s.alarmMinuteStep = ALARM_MINUTE_STEP;
+  s.touchOnly = TOUCH_ONLY;
   static const int focus[] = FOCUS_CHOICES_MIN;
   const int n = (int)(sizeof(focus) / sizeof(focus[0]));
   for (int i = 0; i < utility::Settings::MAX_FOCUS; i++) s.focusMinutes[i] = i < n ? focus[i] : 0;
@@ -70,6 +74,9 @@ static App app(settingsFromConfig());
 // ---- Modules. Start order = the order of app.add() in setup().
 #if FEATURE_ALARM_STORE
 static AlarmStore alarmStore;   // first: restores the saved alarm
+#endif
+#if FEATURE_FACE_STORE
+static FaceStore faceStore;     // restores the saved default face before the home screen is drawn
 #endif
 #if FEATURE_WIFI_TIME
 static WifiClock wifiClock;
@@ -101,12 +108,18 @@ static SoakLog soakLog_;        // after the modules it reads from
 static Screen screen;           // last: draws what the others set up
 
 void setup() {
+#if FEATURE_BATTERY
+  Battery::guardAtBoot();  // after an empty-battery sleep: wake up only if USB is in or the cell recovered
+#endif
   Serial.begin(SERIAL_BAUD);
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);  // shared I2C bus: OLED + MPU6050
   Wire.setClock(I2C_FREQ_HZ);
 
 #if FEATURE_ALARM_STORE
   app.add(alarmStore);
+#endif
+#if FEATURE_FACE_STORE
+  app.add(faceStore);
 #endif
 #if FEATURE_WIFI_TIME
   app.add(wifiClock);

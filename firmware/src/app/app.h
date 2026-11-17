@@ -10,7 +10,13 @@
 #include "../input/events.h"
 #include "../utility/machine.h"
 
-#define FIRMWARE_VERSION "0.3.1"  // 0.3 = utility (clock, alarm, focus, stopwatch) on the parts rig; 0.3.1 = soak log
+// Name and version: the dino_wedge_c3 build (wedge-eye face, same logic) sets its own in platformio.ini.
+#ifndef FIRMWARE_NAME
+#define FIRMWARE_NAME "Dino"
+#endif
+#ifndef FIRMWARE_VERSION
+#define FIRMWARE_VERSION "0.4.0"  // 0.3 = utility on the parts rig; 0.3.1 = soak log; 0.4.0 = power saving, battery icon, clock mode
+#endif
 
 class App {
  public:
@@ -25,9 +31,13 @@ class App {
   void emitVoice(sound::Voice v);                 // ask the output modules to play a dino voice
   void setAlarm(const utility::Alarm& a);         // change the alarm (test key, later the app); tells all modules
   void restoreAlarm(const utility::Alarm& a);     // set the alarm at start-up without re-saving it
+  void restoreFace(int index);                    // set dino's default face at start-up without re-saving it
   void setTimeSource(const TimeSource* t) { time_ = t; }
   void setHomeScene(HomeScene* h) { home_ = h; }
   HomeScene* homeScene() const { return home_; }
+  void setBatteryInfo(BatteryInfo* b) { battery_ = b; }
+  BatteryInfo* batteryInfo() const { return battery_; }
+  void prepareShutdown();                         // tell every module the battery is empty (they save what they must)
   utility::WallTime wallTime() const;
   utility::Machine& machine() { return machine_; }
   const utility::Machine& machine() const { return machine_; }
@@ -48,8 +58,10 @@ class App {
   utility::Machine machine_;
   const TimeSource* time_ = nullptr;
   HomeScene* home_ = nullptr;
+  BatteryInfo* battery_ = nullptr;
   const char* lastState_ = nullptr;
   uint32_t lastLoopStartMs_ = 0, lastGapMs_ = 0, loopWorstMs_ = 0;
   uint32_t now_ = 0;  // time of the current loop: every event in one loop gets the same time
   void alarmChanged(const utility::Alarm& a);
+  void faceChanged(int index);
 };

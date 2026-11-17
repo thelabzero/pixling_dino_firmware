@@ -18,6 +18,11 @@ inline Draw fa(Ex n, const FaceO& o = FaceO()) {
   FaceP p = resolve(n, o);
   return [p](Grid& g) { faceDraw(g, p); };
 }
+// The preset itself, never the user's default face (the picker shows the candidates with these).
+inline Draw fexact(Ex n, const FaceO& o = FaceO()) {
+  FaceP p = resolveExact(n, o);
+  return [p](Grid& g) { faceDraw(g, p); };
+}
 inline Draw I(const FaceO& o = FaceO()) { return fa(Ex::Idle, o); }
 // Small face: scale 0.55 at x24 y31 looking right at the content beside it.
 inline Draw sm(Ex n, const FaceO& o = FaceO()) { return fa(n, FaceO().s(0.55).x(24).y(31).look(1, 0).over(o)); }

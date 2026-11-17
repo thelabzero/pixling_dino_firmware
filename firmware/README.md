@@ -12,6 +12,8 @@ The firmware for dino, the pixel dinosaur on your desk: an ESP32-C3 SuperMini wi
 pio run -e dino_c3 -t upload && pio device monitor -e dino_c3
 ```
 
+Editions: `dino_c3` (default), `dino_wedge_c3` (wedge-eye face), and the touch-only `dino_touch_c3` / `dino_touch_wedge_c3` (no IMU; see "Touch-only mode" below). Replace the env name in the command above.
+
 Add `-f time` to the monitor to put a time stamp on every line. On start-up the monitor lists every module and whether it was found.
 
 ## Using it
@@ -19,13 +21,29 @@ Add `-f time` to the monitor to put a time stamp on every line. On start-up the 
 | Do | What happens |
 |---|---|
 | Power on / reset | The Pixling boot film (about 5 s), then the home face. A tap skips it. `B` in the monitor replays it |
-| Long press | Menu: Clock, Alarm, Focus, Stopwatch, Wi-Fi, Back. Tilt to move, tap to choose |
+| Long press | Menu: Clock, Alarm, Focus, Stopwatch, Wi-Fi, Face, Back. Tilt to move, tap to choose |
 | Double tap | Time board |
 | Menu → Alarm | Set alarm: starts at the current time. Tilt = ±1 h, tap, tilt = ±5 min, tap = save. Hold = alarm off |
 | Alarm ringing | Tap = snooze 5 min. Hold or flip face-down = dismiss. Stops by itself after 10 min |
 | Menu → Focus | Tilt to pick the length, tap or flip face-down to start. Long press = give up. A break follows |
 | Menu → Stopwatch | Tap = pause/resume, long press = exit |
+| Menu → Face | Pick dino's default face: tilt to browse the 10 faces, tap to choose, "make this your default?" and tap again to fix it (hold = no, back to the picker). Saved in flash (`FEATURE_FACE_STORE`), ADR 011 |
 | Menu → Wi-Fi | "Connect your dino": join the `DINO-xxxx` network on your phone with the password on the screen, pick your Wi-Fi on the page that opens. Long press = cancel. Gives up after 5 min |
+
+### Touch-only mode (`dino_touch_c3`, `dino_touch_wedge_c3`, ADR 012)
+
+Built with `-DTOUCH_ONLY=1`: `FEATURE_IMU` is off and the touch timings in `config.h` change (long tap 700 ms, no hold). **Tap** = next, **long tap** = select, everywhere.
+
+| Do | What happens |
+|---|---|
+| Home: 1 / 2 / 3 / 4 taps | Pet / time board / cute face / angry face (taps are counted for `TOUCH_MULTI_GAP_MS` = 350 ms, home screen only) |
+| Home: long tap | Menu: a zoomed list, 3 rows at a time, scrolls as you tap. Long tap on a row opens it. The Clock row shows ON / OFF, the Alarm row its time |
+| Alarm | Tap = +1 h, long tap, tap = +5 min, long tap, tap = ON / OFF, long tap = confirm (OFF turns the alarm off) |
+| Alarm ringing | Tap = snooze, long tap = dismiss |
+| Face picker | Tap = next face, long tap = choose, then long tap = yes, tap = no |
+| Focus, stopwatch, Wi-Fi | Long tap = leave / give up. Stopwatch: tap = pause / resume |
+
+The brain stays one machine: `Machine::translate()` rewrites the touch events per state when `Settings::touchOnly` is set, so the normal logic is unchanged. The list is drawn by `menuList` / `menuListSwap` in `src/scenes/dino_live.cpp`; the cute and angry reactions by `scenes::buildMood`. Board steps: [`docs/touch-only-checklist.md`](../docs/touch-only-checklist.md).
 
 On the home screen dino lives its day (times and weights in `config.h` and `src/life/`): it wakes up, idles with small quirks, naps, gets drowsy in the evening and sleeps at night with the screen dimmed. Taps, shakes, pick-ups and tilts get a reaction.
 
@@ -46,7 +64,7 @@ src/
   main.cpp            wiring only: config -> settings, create the switched-on modules, start the App
   app/                the loop (modules -> brain -> sounds / alarm changes -> modules) + Module interface
   modules/            one file pair per feature: screen, life, imu_input, touch_input, battery,
-                      buzzer, wifi_clock, alarm_store, serial_console, sound_log, soak_log
+                      buzzer, wifi_clock, alarm_store, face_store, serial_console, sound_log, soak_log
   utility/            the brain: menu, alarm, focus, stopwatch. Pure C++, desktop-tested
   life/               dino's day: phases, behaviour choice, reactions. Pure C++, desktop-tested
   face/ scenes/       the face rig and every screen as frame data. Pure C++, checked by tools/face_check.py

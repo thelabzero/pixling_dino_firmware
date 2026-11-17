@@ -24,6 +24,12 @@
 
 **[Fact]** On the ESP32-C3 only GPIO0–5 can wake the chip from deep sleep. GPIO2, 8 and 9 are strapping pins: keep their pull-ups as the board has them.
 
+## Battery (as given by the owner, 2026-11-09)
+
+- Cell: 3.7 V, 450 mAh LiPo, marked **KP411525** (batch code given: R41166073). Charged through a charger module (blue light = full).
+- **Unknown:** whether the cell has a protection board; the charger module's charge current (a TP4056 module defaults to about 1 A, over 2C for this cell: check it, about 0.5C = 225 mA is the usual safe choice). Cut-off about 3.0 V is the typical LiPo value (assumption: not read from a datasheet).
+- Soak run 1 (idle on the home screen, 2026-11-09, `docs/soak-checklist.md`): **4 h 23 min** from a first reading of 3,943 mV to 2,811 mV (uncalibrated reading). Estimated average draw about 65-105 mA (estimate: capacity divided by runtime; no current sensor). The cell was run below 3.0 V: add a low-battery cutoff.
+
 ## Known hardware notes
 
 - SuperMini has a power LED and LDO that waste current in deep sleep: battery numbers measured on it don't represent the product.

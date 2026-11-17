@@ -21,6 +21,7 @@ class SoakLog : public Module {
   bool onKey(App& app, char c) override;
   const char* keyHelp() const override { return "w = dump the soak log, x x = erase it"; }
   void printInfo(Print& out) const override;
+  void onShutdown(App& app) override;   // the empty-battery sleep: log it and write the buffer to flash
 
  private:
   void push(soak::Record r, bool isEvent);          // stamp it (boot, uptime, clock) and add it to the RAM buffer

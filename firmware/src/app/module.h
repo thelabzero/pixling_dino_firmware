@@ -47,6 +47,9 @@ class Module {
   // The alarm was confirmed, changed or turned off.
   virtual void onAlarmChanged(App&, const utility::Alarm&) {}
 
+  // The user made a face dino's default (menu > Face, confirmed with a second tap). `index` = scenes::FACE_CHOICES index.
+  virtual void onFaceChanged(App&, int /*index*/) {}
+
   // A key typed in the Serial monitor that the console did not use. Return true if handled.
   virtual bool onKey(App&, char) { return false; }
 
@@ -55,6 +58,9 @@ class Module {
 
   // Status for the "i" key.
   virtual void printInfo(Print&) const {}
+
+  // The dino is about to go to sleep because the battery is empty (App::prepareShutdown): save what must be saved.
+  virtual void onShutdown(App&) {}
 
   // The soak log is about to take a sample: fill in the fields this module knows (battery mV, render time...).
   virtual void soakFill(soak::Record&) const {}
@@ -76,4 +82,13 @@ class HomeScene {
   virtual void buildHome(const utility::View& home, scenes::LiveClip& out) const = 0;
   virtual void homeClipDone(uint32_t nowMs) = 0;                              // a one-shot home clip finished
   virtual bool dimmed() const = 0;                                            // night brightness
+};
+
+// A module that reads the battery implements this and registers with app.setBatteryInfo(): the screen draws the icon.
+class BatteryInfo {
+ public:
+  virtual ~BatteryInfo() {}
+  virtual bool present() const = 0;    // a cell is connected
+  virtual bool usb() const = 0;        // USB / charger voltage on the divider (charging): no cell reading
+  virtual int percent() const = 0;     // 0..100, only goes down on battery (power::PercentFilter)
 };

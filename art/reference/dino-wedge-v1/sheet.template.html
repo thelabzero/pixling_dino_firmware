@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dino Wedge Sheet</title>
+<style>
+  body{margin:0;background:#f3f2ee;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#171717;}
+  a{color:#1b1b1b;} a:hover{color:#6b6860;}
+  section.page{padding:56px;display:flex;flex-direction:column;gap:32px;}
+  .eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#6b6860;}
+  .card{background:#fff;border:1px solid #e2e0d9;border-radius:12px;}
+  .tag{font-size:12px;font-weight:700;padding:3px 8px;border-radius:4px;background:#171717;color:#fff;}
+  .mono{font-family:ui-monospace,Menlo,monospace;}
+  .btn{font:inherit;font-size:13px;padding:9px 14px;border-radius:6px;border:1px solid #171717;background:#fff;color:#171717;cursor:pointer;}
+  .btn.dark{background:#171717;color:#fff;}
+  canvas{image-rendering:pixelated;}
+  .opts{display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:13px;}
+  .opts input[type=text]{font:inherit;width:70px;padding:4px 6px;border:1px solid #d9d6cd;border-radius:4px;}
+  @media (max-width:700px){section.page{padding:20px;}}
+</style>
+</head>
+<body>
+<section class="page">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1100px;">
+    <div class="eyebrow">dino · wedge-eye face sheet · new eyes D</div>
+    <div style="font-size:34px;font-weight:700;letter-spacing:-.01em;">Dino, wedge eyes</div>
+    <div style="font-size:15px;line-height:1.5;color:#45433e;max-width:860px;">The same dino with the new D · Wedge face: flat-cut wedge eyes and a small mouth, with no pupil, no brow and no nose. The top edge of each eye tilts to set the mood. Every clip of the v1 sheet (face rig, life, utility, games, friends) is redrawn with this face; icons, type and props are unchanged. Every frame is a real 128 × 64 1-bit bitmap. The large preview plays live; the small one under it is 1:1. Click any frame to pin it in the large preview. <b>Assumption:</b> the 8 presets that are not on the new-eyes page (unimpressed, focus, hungry, chew, scared, determined, squeeze, yawn) are my own wedge versions, for review.</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px;padding-top:6px;">
+      <a href="#R">R · Face rig</a><a href="#L">L · Life</a><a href="#U">U · Utility</a><a href="#G">G · Games</a><a href="#F">F · Friends and messages</a>
+    </div>
+    <div class="opts" style="padding-top:6px;">
+      <label>Zoom <select id="zoom"><option value="4">4×</option><option value="8">8×</option></select></label>
+      <label><input type="checkbox" id="grid"> pixel grid</label>
+      <label>Clock time <input type="text" id="time" value="10:24"></label>
+      <label>Friend <input type="text" id="friend" value="SAM"></label>
+    </div>
+  </div>
+  <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:stretch;">
+    <div class="card" style="padding:20px 24px;display:flex;flex-direction:column;gap:10px;min-width:300px;">
+      <div class="eyebrow">Controls</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 18px;font-size:14px;">
+        <b>Tap</b><span>choose · snooze · play</span>
+        <b>Double tap</b><span>show time</span>
+        <b>Hold 0.6 s</b><span>pet</span>
+        <b>Long press 1.5 s</b><span>open menu</span>
+        <b>Tilt left / right</b><span>move · change value · steer</span>
+        <b>Flip face-down</b><span>dismiss alarm · start focus</span>
+        <b>Shake</b><span>dizzy · cancel</span>
+        <b>Bump two units</b><span>pair as friends</span>
+      </div>
+    </div>
+    <div class="card" style="padding:20px 24px;display:flex;flex-direction:column;gap:10px;max-width:640px;">
+      <div class="eyebrow">Constraint notes</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5;color:#33312d;">
+        <div><b>Face scale.</b> Full face is 1.0: eyes 18 × 14 at ±16 px from centre, mouth 8 px under the eyes. Utility screens use 0.55 (eyes about 10 × 8) at the left. Nothing goes below 0.55, where a slant is still two or three pixels.</div>
+        <div><b>Eye cuts.</b> Mood is carried by the top edge: slant in (mischief, grumpy, rawr), slant out (sad), a flat half lid (smug, unimpressed), a bar (sleepy, blink). Whole-eye shapes: arch, heart, star, spiral.</div>
+        <div><b>Text.</b> 5 × 7 uppercase only, one line of 10 characters at 1×, or 6 characters at 2× for received messages. Digits use the 9 × 13 and 4 × 7 sets.</div>
+        <div><b>Burn-in.</b> Clock, stopwatch and focus pass the whole frame through a 3 × 3 offset ring, one 1 px step every 3 minutes.</div>
+        <div><b>Flashing.</b> Nothing inverts or strobes. The only blinking element is the 20 × 2 px set-alarm underline at 1.25 Hz.</div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="btn dark" id="zipBtn">Download all PNGs (.zip)</button>
+    <button class="btn" id="sheetBtn">Download contact sheet</button>
+  </div>
+  <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:12px;max-width:100%;box-sizing:border-box;">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:20px;font-weight:700;">Contact sheet</span>
+      <span style="font-size:13px;color:#6b6860;">every frame at 1:1, as on the real screen</span>
+    </div>
+    <div style="overflow:auto;"><canvas id="sheet" style="display:block;"></canvas></div>
+  </div>
+  <div id="groups" style="display:flex;flex-direction:column;gap:32px;"></div>
+</section>
+<script>
+/*__RIG__*/
+</script>
+<script>
+const $=s=>document.querySelector(s);
+function paintG(el,g,s,grid){el.width=W*s;el.height=H*s;const c=el.getContext('2d');c.fillStyle='#000';c.fillRect(0,0,el.width,el.height);c.fillStyle='#fff';for(let i=0;i<W*H;i++)if(g[i])c.fillRect((i%W)*s,((i/W)|0)*s,s,s);if(grid){c.fillStyle='rgba(255,255,255,0.09)';for(let x=1;x<W;x++)c.fillRect(x*s,0,1,el.height);for(let y=1;y<H;y++)c.fillRect(0,y*s,el.width,1);c.fillStyle='rgba(255,255,255,0.22)';for(let x=8;x<W;x+=8)c.fillRect(x*s,0,1,el.height);for(let y=8;y<H;y+=8)c.fillRect(0,y*s,el.width,1);}}
+function bwCanvas(arr,w,h){const cv=document.createElement('canvas');cv.width=w;cv.height=h;const c=cv.getContext('2d'),im=c.createImageData(w,h);for(let i=0;i<w*h;i++){const v=arr[i]?255:0;im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=v;im.data[i*4+3]=255;}c.putImageData(im,0,0);return cv;}
+function sheetCanvas(scenes){const fr=[];scenes.forEach(sc=>sc.frames.forEach(f=>fr.push(f[0])));const cols=8,gut=4,rows=Math.ceil(fr.length/cols);const cv=document.createElement('canvas');cv.width=cols*(W+gut)+gut;cv.height=rows*(H+gut)+gut;const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);fr.forEach((g,k)=>c.drawImage(bwCanvas(g,W,H),gut+(k%cols)*(W+gut),gut+((k/cols)|0)*(H+gut)));return cv;}
+const toBytes=cv=>new Promise(r=>cv.toBlob(b=>b.arrayBuffer().then(a=>r(new Uint8Array(a))),'image/png'));
+const CRCT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+const crc32=b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRCT[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0;};
+function zipBlob(files){const enc=new TextEncoder(),parts=[],central=[];let off=0;for(const[name,data]of files){const nb=enc.encode(name),crc=crc32(data);const lh=new DataView(new ArrayBuffer(30));lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(12,0x21,true);lh.setUint32(14,crc,true);lh.setUint32(18,data.length,true);lh.setUint32(22,data.length,true);lh.setUint16(26,nb.length,true);parts.push(lh.buffer,nb,data);const ch=new DataView(new ArrayBuffer(46));ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(14,0x21,true);ch.setUint32(16,crc,true);ch.setUint32(20,data.length,true);ch.setUint32(24,data.length,true);ch.setUint16(28,nb.length,true);ch.setUint32(42,off,true);central.push(ch.buffer,nb);off+=30+nb.length+data.length;}const cd=central.reduce((a,b)=>a+b.byteLength,0);const end=new DataView(new ArrayBuffer(22));end.setUint32(0,0x06054b50,true);end.setUint16(8,files.length,true);end.setUint16(10,files.length,true);end.setUint32(12,cd,true);end.setUint32(16,off,true);return new Blob([...parts,...central,end.buffer],{type:'application/zip'});}
+const dl=(href,name)=>{const a=document.createElement('a');a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove();};
+const fmtMs=ms=>!ms?'still':ms>=60000?(ms/60000)+' min':ms+' ms';
+const el=(tag,css,txt,cls)=>{const e=document.createElement(tag);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;if(cls)e.className=cls;return e;};
+const dur=f=>f[3]||f[1]||1000;
+
+let groups=[],scenes=[],pinned={},ver=0;
+function rebuild(){
+  const T=$('#time').value,FN=$('#friend').value;
+  groups=build(T,FN);scenes=[];pinned={};ver++;
+  groups.forEach(G=>G.scenes.forEach(sc=>{scenes.push(sc);sc.frames.forEach((f,i)=>{f.file='dino_wedge_'+sc.key+'_'+pad2(i+1)+'.png';});sc.total=sc.frames.reduce((a,f)=>a+dur(f),0);}));
+  const root=$('#groups');root.innerHTML='';
+  groups.forEach(G=>{
+    const box=el('div','display:flex;flex-direction:column;gap:22px;');box.id=G.gid;
+    const hd=el('div','display:flex;flex-direction:column;gap:8px;max-width:900px;border-top:1px solid #d9d6cd;padding-top:24px;');
+    const row=el('div','display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;');
+    row.append(el('span',null,G.gid,'tag'),el('span','font-size:28px;font-weight:700;letter-spacing:-.01em;',G.name),
+      el('span','font-size:12px;color:#8a877e;',G.scenes.length+' clips · '+G.scenes.reduce((a,s)=>a+s.frames.length,0)+' frames','mono'));
+    hd.append(row,el('div','font-size:15px;line-height:1.5;color:#45433e;',G.desc));
+    const wrap=el('div','display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;');
+    G.scenes.forEach(sc=>wrap.append(makeCard(sc)));
+    box.append(hd,wrap);root.append(box);
+  });
+  const s=sheetCanvas(scenes),cv=$('#sheet');cv.width=s.width;cv.height=s.height;cv.getContext('2d').drawImage(s,0,0);
+  $('#zipBtn').textContent='Download all PNGs ('+scenes.reduce((a,x)=>a+x.frames.length,0)+' frames + '+Object.keys(ICON).length+' icons + sheet, .zip)';
+}
+function makeCard(sc){
+  const n=sc.frames.length,total=sc.frames.reduce((a,f)=>a+f[1],0);
+  const c=el('div','padding:24px;display:flex;flex-direction:column;gap:14px;width:min-content;','','card');c.id=sc.id;
+  const h=el('div','display:flex;align-items:center;gap:10px;flex-wrap:wrap;');
+  h.append(el('span',null,sc.id,'tag'),el('span','font-size:20px;font-weight:700;white-space:nowrap;',sc.name),
+    el('span','font-size:12px;color:#8a877e;white-space:nowrap;',n+(n===1?' frame':' frames')+(n>1&&sc.key!=='clockshift'&&total?' · '+(total/1000).toFixed(1)+' s':''),'mono'));
+  const trig=el('div','font-size:12px;color:#33312d;background:#f3f2ee;border-radius:4px;padding:6px 8px;',sc.trigger,'mono');
+  const desc=el('div','font-size:14px;line-height:1.5;color:#45433e;',sc.desc);
+  const big=el('canvas','display:block;border-radius:4px;cursor:pointer;');big.dataset.anim=sc.id;big.dataset.scale='big';
+  big.onclick=()=>{delete pinned[sc.id];refresh(sc);};
+  const sm=el('div','display:flex;align-items:center;gap:12px;font-size:12px;color:#8a877e;');
+  const one=el('canvas','display:block;');one.dataset.anim=sc.id;one.dataset.scale='1';
+  const status=el('span',null,'');status.id='st_'+sc.id;sm.append(one,status);
+  const grid=el('div','display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 10px;');
+  sc.frames.forEach((f,i)=>{
+    const cell=el('div','display:flex;flex-direction:column;gap:3px;');
+    const cv=el('canvas','display:block;width:100%;border-radius:2px;cursor:pointer;outline-offset:2px;outline:2px solid transparent;');
+    cv.id='fr_'+sc.id+'_'+i;paintG(cv,f[0],2,false);cv.onclick=()=>{pinned[sc.id]=i;refresh(sc);};
+    const a=el('a','font-size:10px;color:#8a877e;word-break:break-all;',f.file,'mono');a.href='#';
+    a.onclick=e=>{e.preventDefault();dl(bwCanvas(f[0],W,H).toDataURL('image/png'),f.file);};
+    cell.append(cv,el('span','font-size:11px;color:#33312d;padding-top:3px;',pad2(i+1)+' · '+fmtMs(f[1]),'mono'),el('span','font-size:11px;line-height:1.35;color:#6b6860;',f[2]||''),a);
+    grid.append(cell);
+  });
+  c.append(h,trig,desc,big,sm,grid);setTimeout(()=>refresh(sc),0);return c;
+}
+function refresh(sc){
+  const p=pinned[sc.id];
+  $('#st_'+sc.id).textContent=sc.frames.length===1?'1:1':p!=null?'1:1 · frame '+pad2(p+1)+' pinned · click the preview to play':'1:1 · playing · click a frame to pin it';
+  sc.frames.forEach((f,i)=>{const e=document.getElementById('fr_'+sc.id+'_'+i);if(e)e.style.outline=p===i?'2px solid #171717':'2px solid transparent';});
+  document.querySelectorAll('canvas[data-anim="'+sc.id+'"]').forEach(e=>e.__k=null);
+}
+const t0=performance.now();
+function tick(){
+  const now=performance.now()-t0,z=Number($('#zoom').value),grid=$('#grid').checked;
+  scenes.forEach(sc=>{
+    let i=pinned[sc.id];
+    if(i==null){let t=now%sc.total;i=0;while(i<sc.frames.length-1&&t>=dur(sc.frames[i])){t-=dur(sc.frames[i]);i++;}}
+    document.querySelectorAll('canvas[data-anim="'+sc.id+'"]').forEach(e=>{const s=e.dataset.scale==='1'?1:z,key=ver+':'+i+':'+s+':'+grid;if(e.__k===key)return;e.__k=key;paintG(e,sc.frames[i][0],s,s>=4&&grid);});
+  });
+  requestAnimationFrame(tick);
+}
+$('#zipBtn').onclick=async function(){
+  const b=this;if(b.disabled)return;b.disabled=true;const old=b.textContent;b.textContent='Preparing…';
+  try{const files=[];for(const sc of scenes)for(const f of sc.frames)files.push([f.file,await toBytes(bwCanvas(f[0],W,H))]);for(const k in ICON)files.push(['dino_wedge_icon_'+k+'.png',await toBytes(bwCanvas(ICON[k],16,16))]);files.push(['dino_wedge_contact_sheet.png',await toBytes(sheetCanvas(scenes))]);const url=URL.createObjectURL(zipBlob(files));dl(url,'dino_wedge_pngs.zip');setTimeout(()=>URL.revokeObjectURL(url),4000);}
+  finally{b.disabled=false;b.textContent=old;}
+};
+$('#sheetBtn').onclick=()=>dl(sheetCanvas(scenes).toDataURL('image/png'),'dino_wedge_contact_sheet.png');
+$('#time').onchange=$('#friend').onchange=rebuild;
+rebuild();requestAnimationFrame(tick);
+</script>
+</body>
+</html>

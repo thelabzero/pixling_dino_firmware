@@ -59,6 +59,14 @@ def fmt_t(secs):
     return f"{secs // 3600}h{(secs % 3600) // 60:02d}m"
 
 
+def start_clock(rs):
+    """When a run started: the first record that has a synced clock, minus its uptime (the boot record has none)."""
+    for r in rs:
+        if r["epoch"]:
+            return clock({"epoch": r["epoch"] - r["uptime_s"]})
+    return "clock not synced"
+
+
 def clock(r):
     return datetime.datetime.fromtimestamp(r["epoch"], IST).strftime("%d %b %Y %H:%M IST") if r["epoch"] else "clock not synced"
 
@@ -105,7 +113,7 @@ def main():
             ended = f"next boot says it reached {fmt_t(prev_up)} ({nxt[0]['name']})"
         else:
             ended = "last run (still going, or the cell died after its last write)"
-        print(f"| {b} | {clock(first)} | {reason} | {first['batt_mv']} mV | {fmt_t(last['uptime_s'])} | {ended} |")
+        print(f"| {b} | {start_clock(rs)} | {reason} | {first['batt_mv']} mV | {fmt_t(last['uptime_s'])} | {ended} |")
     print(f"\nAbnormal resets (panic, watchdog, brownout): **{abnormal}**\n")
 
     samples = [r for r in rows if r["type"] == "sample"]
@@ -123,7 +131,10 @@ def main():
         b, rs = max(by_run.items(), key=lambda kv: kv[1][-1]["uptime_s"] - kv[1][0]["uptime_s"])
         t0 = rs[0]["uptime_s"]
         total = rs[-1]["uptime_s"] - t0
-        print(f"Longest discharge: boot {b}, from {rs[0]['batt_mv']} mV to {rs[-1]['batt_mv']} mV in **{fmt_t(total)}** ({clock(rs[0])}).\n")
+        print(f"Longest discharge: boot {b}, from {rs[0]['batt_mv']} mV to {rs[-1]['batt_mv']} mV in **{fmt_t(total)}** ({start_clock(rs)}).\n")
+        if rs[0]["batt_mv"] < 4100:
+            print(f"Started at **{rs[0]['batt_mv']} mV**, below a full cell's 4.2 V: either the cell was not full, or the voltage reads low "
+                  "(uncalibrated, `BATTERY_CAL` 1.00). This report cannot tell which; see the calibration note below.\n")
         print("Runtime so far to each voltage (first time the reading was at or below it; USB charging not counted):\n")
         print("| volts | after | firmware's % there (estimate) | measured: share of the run used (assumption: constant load) |")
         print("|---|---|---|---|")
@@ -137,6 +148,8 @@ def main():
             print(f"| {mv} | {fmt_t(el)} | {'' if pct is None else f'{pct:.0f} %'} | {used:.0f} % used, {100 - used:.0f} % left |")
         print("\nThe two right-hand columns should roughly agree. Where they differ, the firmware curve (`lipoPercent`) is off for this cell.")
         print("The 'measured' column treats time as charge, so it is only as good as the load was constant (screen, sounds and Wi-Fi vary).\n")
+        print("**Calibration without a multimeter (assumption: the charger stops at 4.2 V):** charge until the light turns blue, unplug USB, "
+              "wait 5 minutes, press `b` in the monitor. Expected about 4150-4200 mV. `BATTERY_CAL` = 4180 / that reading.\n")
         sag = [r for r in rs if r["batt_mv"] < 3300]
         print(f"Readings below 3300 mV: {len(sag)}. Lowest logged: {min(r['batt_mv'] for r in rs)} mV.")
     usbs = [r for r in samples if r["flags"] & 1]
@@ -145,21 +158,23 @@ def main():
     print()
 
     print("## 3. Memory (fact)\n")
-    print("| boot | heap free first -> last | lowest heap ever | trend (KB/hour) | largest free block, min | stack left, min |")
+    print("| boot | heap free: median per hour of the run (KB) | lowest heap ever | trend of the lowest heap (KB/hour) | largest free block, min | stack left, min |")
     print("|---|---|---|---|---|---|")
     leak = False
     for b, rs in runs.items():
         ss = [r for r in rs if r["type"] == "sample"]
         if len(ss) < 3:
             continue
-        hrs = [r["uptime_s"] / 3600 for r in ss]
-        s = slope(hrs, [r["heap_free"] / 1024 for r in ss])
-        smin = slope(hrs, [r["heap_min"] / 1024 for r in ss])
+        hours = collections.defaultdict(list)
+        for r in ss:
+            hours[r["uptime_s"] // 3600].append(r["heap_free"])
+        med = " / ".join(f"{statistics.median(v) / 1024:.1f}" for _, v in sorted(hours.items()))
+        smin = slope([r["uptime_s"] / 3600 for r in ss], [r["heap_min"] / 1024 for r in ss])
         if smin is not None and smin < -1 and (ss[-1]["uptime_s"] - ss[0]["uptime_s"]) > 3600:
             leak = True
-        print(f"| {b} | {ss[0]['heap_free']} -> {ss[-1]['heap_free']} | {min(r['heap_min'] for r in ss)} | "
-              f"{'' if s is None else f'{s:+.2f}'} | {min(r['heap_maxblk'] for r in ss)} | {min(r['stack_left'] for r in ss)} |")
-    print("\nPass line (from the soak plan): lowest-heap trend flat (above about -1 KB/hour), stack left above 2048 B.")
+        print(f"| {b} | {med} | {min(r['heap_min'] for r in ss)} | {'' if smin is None else f'{smin:+.2f}'} | "
+              f"{min(r['heap_maxblk'] for r in ss)} | {min(r['stack_left'] for r in ss)} |")
+    print("\nPass line (from the soak plan): lowest-heap trend flat (above about -1 KB/hour), stack left above 2048 B. A one-time step in the hourly medians is not a leak; a steady fall every hour is.")
     print(f"Heap leak suspected: **{'YES' if leak else 'no'}**\n")
 
     print("## 4. Timing (fact)\n")
